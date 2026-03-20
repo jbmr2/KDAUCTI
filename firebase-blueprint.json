@@ -1,0 +1,81 @@
+{
+  "entities": {
+    "Player": {
+      "title": "Player",
+      "description": "A Kabaddi player available for auction.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "category": { "type": "string", "enum": ["A", "B", "C"] },
+        "position": { "type": "string", "enum": ["Raider", "Defender", "All-rounder"] },
+        "basePrice": { "type": "number" },
+        "currentBid": { "type": "number" },
+        "currentBidderId": { "type": "string" },
+        "status": { "type": "string", "enum": ["unsold", "sold", "current"] },
+        "teamId": { "type": "string" },
+        "stats": {
+          "type": "object",
+          "properties": {
+            "matches": { "type": "number" },
+            "raidPoints": { "type": "number" },
+            "tacklePoints": { "type": "number" }
+          }
+        }
+      },
+      "required": ["name", "category", "position", "basePrice", "status"]
+    },
+    "Team": {
+      "title": "Team",
+      "description": "A team participating in the auction.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "budget": { "type": "number" },
+        "totalPlayers": { "type": "number" },
+        "logo": { "type": "string" }
+      },
+      "required": ["name", "ownerId", "budget"]
+    },
+    "Bid": {
+      "title": "Bid",
+      "description": "A bid placed on a player.",
+      "type": "object",
+      "properties": {
+        "playerId": { "type": "string" },
+        "teamId": { "type": "string" },
+        "amount": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["playerId", "teamId", "amount", "timestamp"]
+    },
+    "AuctionState": {
+      "title": "Auction State",
+      "description": "Global state of the auction.",
+      "type": "object",
+      "properties": {
+        "currentPlayerId": { "type": "string" },
+        "status": { "type": "string", "enum": ["idle", "active", "finished"] },
+        "timer": { "type": "number" }
+      }
+    }
+  },
+  "firestore": {
+    "players": {
+      "schema": "Player",
+      "description": "Collection of players."
+    },
+    "teams": {
+      "schema": "Team",
+      "description": "Collection of teams."
+    },
+    "bids": {
+      "schema": "Bid",
+      "description": "History of bids."
+    },
+    "auctionState": {
+      "schema": "AuctionState",
+      "description": "Global auction settings."
+    }
+  }
+}

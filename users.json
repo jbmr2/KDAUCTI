@@ -1,0 +1,21 @@
+{
+  "users": {
+    "ADMIN_UID": {
+      "email": "jbmrsports@gmail.com",
+      "role": "admin",
+      "name": "Admin"
+    },
+    "AD01": {
+      "name": "Owner AD01",
+      "email": "ownerad01@example.com",
+      "role": "viewer",
+      "teamId": "GENERATED_TEAM_ID"
+    },
+    "AD02": {
+      "name": "Owner AD02",
+      "email": "ownerad02@example.com",
+      "role": "viewer",
+      "teamId": "GENERATED_TEAM_ID"
+    }
+  }
+}
