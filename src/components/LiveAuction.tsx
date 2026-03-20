@@ -343,8 +343,8 @@ export const LiveAuction = () => {
                       <p className="text-xs text-zinc-500 font-black uppercase tracking-widest mb-2">Base Price</p>
                       <input 
                         type="number" 
-                        value={currentPlayer.basePrice} 
-                        onChange={e => updateBasePrice(parseInt(e.target.value) || 0)}
+                        value={isNaN(currentPlayer.basePrice) ? '' : currentPlayer.basePrice} 
+                        onChange={e => updateBasePrice(e.target.value === '' ? '' as any : parseInt(e.target.value))}
                         className="w-32 p-2 bg-zinc-950 border border-zinc-800 rounded-xl text-3xl font-black italic text-white text-right focus:border-emerald-500 outline-none"
                       />
                     </div>
@@ -392,8 +392,8 @@ export const LiveAuction = () => {
                         <label className="text-[10px] font-black text-zinc-500 uppercase">Multiplier Unit (₹):</label>
                         <input 
                           type="number" 
-                          value={multiplierUnit}
-                          onChange={e => setMultiplierUnit(parseInt(e.target.value) || 0)}
+                          value={isNaN(multiplierUnit) ? '' : multiplierUnit}
+                          onChange={e => setMultiplierUnit(e.target.value === '' ? '' as any : parseInt(e.target.value))}
                           className="w-full md:w-32 p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs font-black text-emerald-500 focus:border-emerald-500 outline-none"
                         />
                       </div>

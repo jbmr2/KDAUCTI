@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Plus, Play, Square, UserPlus, Users, Trash2, Edit2, Trophy, Tv, Copy } from 'lucide-react';
+import { Plus, Play, Square, UserPlus, Users, Trash2, Edit2, Trophy, Tv, Copy, Key } from 'lucide-react';
 import { rtdb } from '../firebase';
 import { ref, onValue, update, push, remove, set, get, serverTimestamp } from 'firebase/database';
 import { Player, Team, AuctionState, OperationType, Tournament } from '../types';
@@ -31,7 +31,7 @@ export const AdminDashboard = () => {
 
   const [newTournament, setNewTournament] = useState({
     name: '',
-    initialPurse: 50000000,
+    initialPurse: 50000000 as any,
     password: ''
   });
 
@@ -350,8 +350,8 @@ export const AdminDashboard = () => {
                 <input 
                   type="number" 
                   placeholder="Initial Purse (e.g. 50000000)" 
-                  value={newTournament.initialPurse}
-                  onChange={e => setNewTournament({...newTournament, initialPurse: parseInt(e.target.value)})}
+                  value={isNaN(newTournament.initialPurse) ? '' : newTournament.initialPurse}
+                  onChange={e => setNewTournament({...newTournament, initialPurse: e.target.value === '' ? '' : parseInt(e.target.value)})}
                   className="w-full p-4 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none transition-all"
                 />
               </div>
@@ -400,8 +400,8 @@ export const AdminDashboard = () => {
                 <input 
                   type="number" 
                   placeholder="Budget" 
-                  value={newTeam.budget}
-                  onChange={e => setNewTeam({...newTeam, budget: parseInt(e.target.value)})}
+                  value={isNaN(newTeam.budget) ? '' : newTeam.budget}
+                  onChange={e => setNewTeam({...newTeam, budget: e.target.value === '' ? '' : parseInt(e.target.value)})}
                   className="w-full p-4 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none transition-all"
                 />
                 <input 
@@ -471,8 +471,8 @@ export const AdminDashboard = () => {
               <input 
                 type="number" 
                 placeholder="Base Price" 
-                value={newPlayer.basePrice}
-                onChange={e => setNewPlayer({...newPlayer, basePrice: parseInt(e.target.value)})}
+                value={isNaN(newPlayer.basePrice) ? '' : newPlayer.basePrice}
+                onChange={e => setNewPlayer({...newPlayer, basePrice: e.target.value === '' ? '' : parseInt(e.target.value)})}
                 className="w-full p-4 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none transition-all"
               />
               <button 

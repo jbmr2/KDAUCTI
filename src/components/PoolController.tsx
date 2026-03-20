@@ -465,8 +465,8 @@ export const PoolController = () => {
                         <p className="text-[10px] text-zinc-500 font-bold uppercase mb-1">Base Price</p>
                         <input 
                           type="number" 
-                          value={activePlayer.basePrice} 
-                          onChange={e => updateBasePrice(parseInt(e.target.value) || 0)}
+                          value={activePlayer ? (isNaN(activePlayer.basePrice) ? '' : activePlayer.basePrice) : ''} 
+                          onChange={e => updateBasePrice(e.target.value === '' ? 0 : parseInt(e.target.value))}
                           className="w-24 p-2 bg-zinc-950 border border-zinc-800 rounded text-xl font-black text-white text-right focus:border-emerald-500 outline-none"
                         />
                       </div>
@@ -491,8 +491,8 @@ export const PoolController = () => {
                           <p className="text-[10px] text-zinc-500 font-bold uppercase">Multiplier Unit (₹)</p>
                           <input 
                             type="number" 
-                            value={multiplierUnit}
-                            onChange={e => setMultiplierUnit(parseInt(e.target.value) || 0)}
+                            value={isNaN(multiplierUnit) ? '' : multiplierUnit}
+                            onChange={e => setMultiplierUnit(e.target.value === '' ? '' as any : parseInt(e.target.value))}
                             className="w-24 p-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-black text-emerald-500 outline-none focus:border-emerald-500"
                           />
                         </div>
@@ -590,7 +590,7 @@ export const PoolController = () => {
                     <option value="Raider">Raider</option><option value="Defender">Defender</option><option value="All-rounder">All-rounder</option>
                   </select>
                 </div>
-                <input type="number" placeholder="Base Price" value={newPlayer.basePrice} onChange={e => setNewPlayer({...newPlayer, basePrice: parseInt(e.target.value)})} className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs" />
+                <input type="number" placeholder="Base Price" value={isNaN(newPlayer.basePrice) ? '' : newPlayer.basePrice} onChange={e => setNewPlayer({...newPlayer, basePrice: e.target.value === '' ? '' : parseInt(e.target.value)})} className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs" />
                 <button onClick={addPlayer} className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl text-xs">ADD PLAYER</button>
               </div>
             </div>
@@ -600,7 +600,7 @@ export const PoolController = () => {
               <div className="space-y-4">
                 <input type="text" placeholder="Team Name" value={newTeam.name} onChange={e => setNewTeam({...newTeam, name: e.target.value})} className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs" />
                 <div className="grid grid-cols-2 gap-4">
-                  <input type="number" placeholder="Team Purse Value" value={newTeam.budget} onChange={e => setNewTeam({...newTeam, budget: e.target.value})} className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs" />
+                  <input type="number" placeholder="Team Purse Value" value={isNaN(newTeam.budget) ? '' : newTeam.budget} onChange={e => setNewTeam({...newTeam, budget: e.target.value === '' ? '' : parseInt(e.target.value)})} className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs" />
                   <input type="text" placeholder="Logo URL" value={newTeam.logo} onChange={e => setNewTeam({...newTeam, logo: e.target.value})} className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs" />
                 </div>
                 <button onClick={addTeam} className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl text-xs">ADD TEAM</button>
