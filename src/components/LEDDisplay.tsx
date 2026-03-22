@@ -115,50 +115,54 @@ export const LEDDisplay = () => {
     const purchaser = teams.find(t => t.id === lastCompletedPlayer.currentBidderId);
 
     return (
-      <div className={`h-screen w-screen flex flex-col items-center justify-center overflow-hidden transition-colors duration-1000 ${
-        isSold ? 'bg-emerald-950' : 'bg-red-950'
+      <div className={`h-screen w-screen flex flex-col items-center justify-center overflow-hidden transition-all duration-1000 ${
+        isSold ? 'bg-black bg-gradient-to-br from-emerald-950/40 to-black' : 'bg-black bg-gradient-to-br from-red-950/40 to-black'
       }`}>
         <motion.div 
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="flex flex-col items-center gap-12 text-center p-20"
+          className="w-full h-full flex flex-col items-center justify-center gap-[4vh] text-center p-[4vw]"
         >
           <motion.div
-            animate={{ y: [0, -20, 0] }}
+            animate={{ y: [0, -10, 0], scale: [1, 1.05, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
-            className={`text-[12rem] font-black italic uppercase tracking-tighter leading-none mb-4 ${
-              isSold ? 'text-emerald-400 drop-shadow-[0_0_50px_rgba(16,185,129,0.5)]' : 'text-red-500 drop-shadow-[0_0_50px_rgba(239,68,68,0.5)]'
+            className={`text-[25vh] font-black italic uppercase tracking-tighter leading-none ${
+              isSold ? 'text-emerald-500 drop-shadow-[0_0_80px_rgba(16,185,129,0.8)]' : 'text-red-500 drop-shadow-[0_0_80px_rgba(239,68,68,0.8)]'
             }`}
           >
             {isSold ? 'SOLD' : 'UNSOLD'}
           </motion.div>
 
-          <div className="space-y-4">
-            <h1 className="text-[8rem] font-black text-white uppercase tracking-tighter leading-none">
+          <div className="space-y-2">
+            <h1 className="text-[12vh] font-black text-white uppercase tracking-tighter leading-none drop-shadow-2xl">
               {lastCompletedPlayer.name}
             </h1>
-            <p className="text-4xl text-zinc-400 font-bold uppercase tracking-widest italic">
+            <p className="text-[4vh] text-zinc-500 font-black uppercase tracking-[0.5em] italic">
               {lastCompletedPlayer.position} • {lastCompletedPlayer.category}
             </p>
           </div>
 
           {isSold && purchaser && (
-            <div className="flex flex-col items-center gap-8 mt-8">
-              <div className="flex items-center gap-10 bg-black/40 p-10 rounded-[4rem] border-2 border-emerald-500/30 backdrop-blur-3xl shadow-2xl">
-                {purchaser.logo ? (
-                  <img src={purchaser.logo} className="w-48 h-48 rounded-3xl border-4 border-emerald-500 shadow-2xl" />
-                ) : (
-                  <Users className="w-48 h-48 text-emerald-500" />
-                )}
+            <div className="flex flex-col items-center gap-[4vh] w-full max-w-[90vw]">
+              <div className="flex items-center gap-[4vw] bg-zinc-900/60 p-[3vh] rounded-[4vh] border-2 border-emerald-500/20 backdrop-blur-3xl shadow-2xl">
+                <div className="w-[20vh] h-[20vh] bg-white rounded-[2vh] p-1 shadow-2xl overflow-hidden flex-shrink-0">
+                  {purchaser.logo ? (
+                    <img src={purchaser.logo} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                  ) : (
+                    <Users className="w-full h-full text-emerald-500 p-4" />
+                  )}
+                </div>
                 <div className="text-left">
-                  <p className="text-emerald-500 text-3xl font-black uppercase tracking-widest mb-2">Purchased By</p>
-                  <h2 className="text-8xl font-black text-white uppercase italic leading-none">{purchaser.name}</h2>
+                  <p className="text-emerald-500 text-[2.5vh] font-black uppercase tracking-widest mb-1 opacity-60">Purchased By</p>
+                  <h2 className="text-[8vh] font-black text-white uppercase italic leading-none truncate max-w-[50vw]">
+                    {purchaser.name}
+                  </h2>
                 </div>
               </div>
 
-              <div className="bg-white/5 px-16 py-8 rounded-[3rem] border border-white/10">
-                <p className="text-zinc-500 text-2xl font-black uppercase tracking-widest mb-2">Final Bid Amount</p>
-                <div className="text-[10rem] font-black text-emerald-400 leading-none">
+              <div className="bg-emerald-500/10 px-[6vw] py-[2vh] rounded-[3vh] border-2 border-emerald-500/30 backdrop-blur-xl">
+                <p className="text-zinc-500 text-[2vh] font-black uppercase tracking-[0.3em] mb-1">Final Bid Amount</p>
+                <div className="text-[12vh] font-black text-emerald-400 leading-none drop-shadow-[0_0_30px_rgba(16,185,129,0.4)]">
                   ₹{lastCompletedPlayer.currentBid?.toLocaleString()}
                 </div>
               </div>
@@ -166,8 +170,8 @@ export const LEDDisplay = () => {
           )}
 
           {!isSold && (
-            <div className="mt-12 bg-black/40 px-20 py-10 rounded-[3rem] border-4 border-red-500/30 backdrop-blur-3xl">
-              <p className="text-red-500/60 text-3xl font-black uppercase tracking-[0.5em] italic">No Bids Placed</p>
+            <div className="mt-8 bg-zinc-900/60 px-[8vw] py-[4vh] rounded-[4vh] border-4 border-red-500/20 backdrop-blur-3xl">
+              <p className="text-red-500/40 text-[5vh] font-black uppercase tracking-[0.8em] italic">NO BIDS</p>
             </div>
           )}
         </motion.div>

@@ -261,7 +261,7 @@ export const AuctionTicker = () => {
           initial={{ y: 100 }}
           animate={{ y: 0 }}
           exit={{ y: 100 }}
-          className="fixed bottom-0 left-0 right-0 h-32 bg-black flex items-center overflow-hidden border-t-4 border-emerald-500 z-50 shadow-[0_-20px_60px_rgba(0,0,0,0.8)]"
+          className="fixed bottom-0 left-0 right-0 h-[15vh] bg-black flex items-center overflow-hidden border-t-4 border-emerald-500 z-50 shadow-[0_-20px_60px_rgba(0,0,0,0.8)]"
         >
           {/* Progress bar for 10s timer */}
           <motion.div 
@@ -271,37 +271,37 @@ export const AuctionTicker = () => {
             className="absolute bottom-0 left-0 h-1 bg-emerald-500 z-20"
           />
 
-          <div className="flex w-full items-center px-12 gap-12 relative z-10">
-            <div className="bg-emerald-600 px-10 py-4 skew-x-[-15deg] -ml-16 pr-16 flex items-center justify-center">
-              <span className="text-6xl font-black italic uppercase text-white skew-x-[15deg]">SOLD</span>
+          <div className="flex w-full items-center px-[4vw] gap-[4vw] relative z-10">
+            <div className="bg-emerald-600 px-[3vw] py-[2vh] skew-x-[-15deg] -ml-[6vw] pr-[5vw] flex items-center justify-center">
+              <span className="text-[6vh] font-black italic uppercase text-white skew-x-[15deg]">SOLD</span>
             </div>
             
-            <div className="flex-1 flex flex-col">
-              <div className="text-5xl font-black italic uppercase text-white tracking-tighter truncate drop-shadow-xl">
+            <div className="flex-1 flex flex-col min-w-0">
+              <div className="text-[6vh] font-black italic uppercase text-white tracking-tighter truncate drop-shadow-xl leading-none">
                 {soldPlayer.name}
               </div>
-              <div className="text-emerald-500 font-black uppercase text-xl tracking-widest">
+              <div className="text-emerald-500 font-black uppercase text-[2vh] tracking-widest mt-1">
                 {soldPlayer.position} • {soldPlayer.category}
               </div>
             </div>
 
-            <div className="flex items-center gap-6 border-l border-white/20 pl-12 h-20">
+            <div className="flex items-center gap-[2vw] border-l border-white/10 pl-[3vw] h-[10vh]">
               {(() => {
                 const team = teams.find(t => t.id === soldPlayer.teamId);
                 return (
                   <>
-                    <div className="w-16 h-16 bg-white rounded-xl p-1 shadow-2xl flex-shrink-0">
+                    <div className="w-[8vh] h-[8vh] bg-white rounded-xl p-1 shadow-2xl flex-shrink-0 overflow-hidden">
                       {team?.logo ? (
-                        <img src={team.logo} className="w-full h-full object-cover rounded-lg" referrerPolicy="no-referrer" />
+                        <img src={team.logo} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                       ) : (
-                        <div className="w-full h-full bg-emerald-100 flex items-center justify-center rounded-lg">
-                          <Trophy className="w-8 h-8 text-emerald-600" />
+                        <div className="w-full h-full bg-emerald-100 flex items-center justify-center">
+                          <Trophy className="w-[4vh] h-[4vh] text-emerald-600" />
                         </div>
                       )}
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-zinc-500 text-xs font-black uppercase tracking-[0.2em]">Bought By</span>
-                      <span className="text-3xl font-black italic uppercase text-white tracking-tighter whitespace-nowrap">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-zinc-500 text-[1.2vh] font-black uppercase tracking-[0.2em]">Bought By</span>
+                      <span className="text-[3.5vh] font-black italic uppercase text-white tracking-tighter whitespace-nowrap truncate max-w-[15vw]">
                         {team?.name || 'New Team'}
                       </span>
                     </div>
@@ -310,9 +310,9 @@ export const AuctionTicker = () => {
               })()}
             </div>
 
-            <div className="bg-emerald-500/10 px-10 py-4 border border-emerald-500/30 rounded-2xl flex flex-col items-center justify-center min-w-[200px]">
-              <span className="text-emerald-500 text-xs font-black uppercase tracking-widest mb-1">Price</span>
-              <span className="text-5xl font-black tabular-nums text-white">
+            <div className="bg-emerald-500/10 px-[3vw] py-[1.5vh] border border-emerald-500/30 rounded-2xl flex flex-col items-center justify-center min-w-[15vw]">
+              <span className="text-emerald-500 text-[1.2vh] font-black uppercase tracking-widest mb-1">Price</span>
+              <span className="text-[6vh] font-black tabular-nums text-white leading-none">
                 ₹{(soldPlayer.currentBid || soldPlayer.basePrice).toLocaleString()}
               </span>
             </div>
@@ -326,7 +326,7 @@ export const AuctionTicker = () => {
           initial={{ y: 100 }}
           animate={{ y: 0 }}
           exit={{ y: 100 }}
-          className="fixed bottom-0 left-0 right-0 h-32 bg-black flex items-center justify-center overflow-hidden border-t-4 border-red-500 z-50 shadow-[0_-20px_60px_rgba(0,0,0,0.8)]"
+          className="fixed bottom-0 left-0 right-0 h-[15vh] bg-black flex items-center justify-center overflow-hidden border-t-4 border-red-500 z-50 shadow-[0_-20px_60px_rgba(0,0,0,0.8)]"
         >
           <motion.div 
             initial={{ width: '100%' }}
@@ -335,23 +335,23 @@ export const AuctionTicker = () => {
             className="absolute bottom-0 left-0 h-1 bg-red-500 z-20"
           />
 
-          <div className="flex items-center gap-12 w-full px-12">
-            <div className="bg-red-600 px-10 py-4 skew-x-[-15deg] -ml-16 pr-16 flex items-center justify-center">
-              <span className="text-6xl font-black italic uppercase text-white skew-x-[15deg]">UNSOLD</span>
+          <div className="flex items-center gap-[4vw] w-full px-[4vw]">
+            <div className="bg-red-600 px-[3vw] py-[2vh] skew-x-[-15deg] -ml-[6vw] pr-[5vw] flex items-center justify-center">
+              <span className="text-[6vh] font-black italic uppercase text-white skew-x-[15deg]">UNSOLD</span>
             </div>
             
-            <div className="flex-1">
-              <span className="text-6xl font-black italic uppercase text-white tracking-tighter">
+            <div className="flex-1 min-w-0">
+              <span className="text-[6vh] font-black italic uppercase text-white tracking-tighter truncate block leading-none">
                 {soldPlayer.name}
               </span>
-              <span className="ml-8 text-zinc-500 text-3xl font-black uppercase italic tracking-widest">
+              <span className="text-zinc-500 text-[2.5vh] font-black uppercase italic tracking-widest mt-1 block">
                 {soldPlayer.position} • {soldPlayer.category}
               </span>
             </div>
 
-            <div className="bg-red-500/10 px-10 py-4 border border-red-500/30 rounded-2xl flex flex-col items-center justify-center min-w-[200px]">
-              <span className="text-red-500 text-xs font-black uppercase tracking-widest mb-1">Base Price</span>
-              <span className="text-5xl font-black tabular-nums text-white">
+            <div className="bg-red-500/10 px-[4vw] py-[2vh] border border-red-500/30 rounded-2xl flex flex-col items-center justify-center min-w-[15vw]">
+              <span className="text-red-500 text-[1.2vh] font-black uppercase tracking-widest mb-1">Base Price</span>
+              <span className="text-[6vh] font-black tabular-nums text-white leading-none">
                 ₹{soldPlayer.basePrice.toLocaleString()}
               </span>
             </div>
