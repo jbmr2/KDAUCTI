@@ -281,6 +281,7 @@ export const PoolController = () => {
       const updates: any = {};
       updates[`tournaments/${activePool.id}/players/${player.id}/status`] = 'sold';
       updates[`tournaments/${activePool.id}/players/${player.id}/teamId`] = team.id;
+      updates[`tournaments/${activePool.id}/players/${player.id}/updatedAt`] = serverTimestamp();
       updates[`tournaments/${activePool.id}/teams/${team.id}/budget`] = team.budget - player.currentBid;
       updates[`tournaments/${activePool.id}/teams/${team.id}/totalPlayers`] = team.totalPlayers + 1;
       updates[`tournaments/${activePool.id}/auctionState/status`] = 'idle';
@@ -298,6 +299,7 @@ export const PoolController = () => {
       updates[`tournaments/${activePool.id}/players/${player.id}/status`] = 'unsold';
       updates[`tournaments/${activePool.id}/players/${player.id}/currentBid`] = 0;
       updates[`tournaments/${activePool.id}/players/${player.id}/currentBidderId`] = null;
+      updates[`tournaments/${activePool.id}/players/${player.id}/updatedAt`] = serverTimestamp();
       updates[`tournaments/${activePool.id}/auctionState/status`] = 'idle';
       updates[`tournaments/${activePool.id}/auctionState/currentPlayerId`] = null;
       await update(ref(rtdb), updates);

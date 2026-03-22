@@ -261,30 +261,47 @@ export const AuctionTicker = () => {
           initial={{ y: 100 }}
           animate={{ y: 0 }}
           exit={{ y: 100 }}
-          className="fixed bottom-0 left-0 right-0 h-32 bg-gradient-to-r from-emerald-600 to-emerald-800 flex items-center overflow-hidden border-t-4 border-white z-50 shadow-[0_-20px_60px_rgba(0,0,0,0.5)]"
+          className="fixed bottom-0 left-0 right-0 h-32 bg-black flex items-center overflow-hidden border-t-4 border-emerald-500 z-50 shadow-[0_-20px_60px_rgba(0,0,0,0.8)]"
         >
-          {/* Shine Effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shine_3s_infinite] pointer-events-none" />
-          
+          {/* Progress bar for 10s timer */}
+          <motion.div 
+            initial={{ width: '100%' }}
+            animate={{ width: '0%' }}
+            transition={{ duration: 10, ease: "linear" }}
+            className="absolute bottom-0 left-0 h-1 bg-emerald-500 z-20"
+          />
+
           <div className="flex w-full items-center px-12 gap-12 relative z-10">
-            {/* Team Logo & Name */}
-            <div className="flex items-center gap-6 border-r border-white/20 pr-12">
+            <div className="bg-emerald-600 px-10 py-4 skew-x-[-15deg] -ml-16 pr-16 flex items-center justify-center">
+              <span className="text-6xl font-black italic uppercase text-white skew-x-[15deg]">SOLD</span>
+            </div>
+            
+            <div className="flex-1 flex flex-col">
+              <div className="text-5xl font-black italic uppercase text-white tracking-tighter truncate drop-shadow-xl">
+                {soldPlayer.name}
+              </div>
+              <div className="text-emerald-500 font-black uppercase text-xl tracking-widest">
+                {soldPlayer.position} • {soldPlayer.category}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-6 border-l border-white/20 pl-12 h-20">
               {(() => {
                 const team = teams.find(t => t.id === soldPlayer.teamId);
                 return (
                   <>
-                    <div className="w-20 h-20 bg-white rounded-2xl p-1 shadow-2xl flex-shrink-0">
+                    <div className="w-16 h-16 bg-white rounded-xl p-1 shadow-2xl flex-shrink-0">
                       {team?.logo ? (
-                        <img src={team.logo} className="w-full h-full object-cover rounded-xl" referrerPolicy="no-referrer" />
+                        <img src={team.logo} className="w-full h-full object-cover rounded-lg" referrerPolicy="no-referrer" />
                       ) : (
-                        <div className="w-full h-full bg-emerald-100 flex items-center justify-center rounded-xl">
-                          <Trophy className="w-10 h-10 text-emerald-600" />
+                        <div className="w-full h-full bg-emerald-100 flex items-center justify-center rounded-lg">
+                          <Trophy className="w-8 h-8 text-emerald-600" />
                         </div>
                       )}
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-white/70 text-xs font-black uppercase tracking-[0.2em]">Purchased By</span>
-                      <span className="text-4xl font-black italic uppercase text-white tracking-tighter whitespace-nowrap drop-shadow-md">
+                      <span className="text-zinc-500 text-xs font-black uppercase tracking-[0.2em]">Bought By</span>
+                      <span className="text-3xl font-black italic uppercase text-white tracking-tighter whitespace-nowrap">
                         {team?.name || 'New Team'}
                       </span>
                     </div>
@@ -293,32 +310,13 @@ export const AuctionTicker = () => {
               })()}
             </div>
 
-            {/* Status & Player */}
-            <div className="flex-1 flex flex-col">
-              <div className="flex items-center gap-3 text-emerald-300 font-black uppercase text-xs tracking-widest mb-1">
-                <CheckCircle2 className="w-4 h-4" />
-                Successful Bid
-              </div>
-              <div className="text-5xl font-black italic uppercase text-white tracking-tighter truncate drop-shadow-xl">
-                {soldPlayer.name}
-              </div>
-            </div>
-
-            {/* Final Amount */}
-            <div className="bg-white/10 backdrop-blur-md px-10 py-4 border border-white/20 rounded-2xl flex flex-col items-center justify-center min-w-[250px] shadow-inner">
-              <span className="text-white/70 text-xs font-black uppercase tracking-widest mb-1">Final Bid Amount</span>
-              <span className="text-5xl font-black tabular-nums text-white drop-shadow-lg">
+            <div className="bg-emerald-500/10 px-10 py-4 border border-emerald-500/30 rounded-2xl flex flex-col items-center justify-center min-w-[200px]">
+              <span className="text-emerald-500 text-xs font-black uppercase tracking-widest mb-1">Price</span>
+              <span className="text-5xl font-black tabular-nums text-white">
                 ₹{(soldPlayer.currentBid || soldPlayer.basePrice).toLocaleString()}
               </span>
             </div>
           </div>
-
-          <style>{`
-            @keyframes shine {
-              0% { transform: translateX(-100%) skewX(-15deg); }
-              40%, 100% { transform: translateX(300%) skewX(-15deg); }
-            }
-          `}</style>
         </motion.div>
       )}
 
@@ -328,17 +326,35 @@ export const AuctionTicker = () => {
           initial={{ y: 100 }}
           animate={{ y: 0 }}
           exit={{ y: 100 }}
-          className="fixed bottom-0 left-0 right-0 h-24 bg-gradient-to-r from-red-600 to-red-800 flex items-center justify-center overflow-hidden border-t-4 border-white z-50"
+          className="fixed bottom-0 left-0 right-0 h-32 bg-black flex items-center justify-center overflow-hidden border-t-4 border-red-500 z-50 shadow-[0_-20px_60px_rgba(0,0,0,0.8)]"
         >
-          <div className="flex items-center gap-8">
-            <XCircle className="w-12 h-12 text-white/50" />
-            <div className="flex flex-col items-center">
-              <span className="text-red-200 text-xs font-black uppercase tracking-[0.3em]">Player Status</span>
-              <span className="text-5xl font-black italic uppercase text-white tracking-tighter">
-                {soldPlayer.name} - UNSOLD
+          <motion.div 
+            initial={{ width: '100%' }}
+            animate={{ width: '0%' }}
+            transition={{ duration: 10, ease: "linear" }}
+            className="absolute bottom-0 left-0 h-1 bg-red-500 z-20"
+          />
+
+          <div className="flex items-center gap-12 w-full px-12">
+            <div className="bg-red-600 px-10 py-4 skew-x-[-15deg] -ml-16 pr-16 flex items-center justify-center">
+              <span className="text-6xl font-black italic uppercase text-white skew-x-[15deg]">UNSOLD</span>
+            </div>
+            
+            <div className="flex-1">
+              <span className="text-6xl font-black italic uppercase text-white tracking-tighter">
+                {soldPlayer.name}
+              </span>
+              <span className="ml-8 text-zinc-500 text-3xl font-black uppercase italic tracking-widest">
+                {soldPlayer.position} • {soldPlayer.category}
               </span>
             </div>
-            <XCircle className="w-12 h-12 text-white/50" />
+
+            <div className="bg-red-500/10 px-10 py-4 border border-red-500/30 rounded-2xl flex flex-col items-center justify-center min-w-[200px]">
+              <span className="text-red-500 text-xs font-black uppercase tracking-widest mb-1">Base Price</span>
+              <span className="text-5xl font-black tabular-nums text-white">
+                ₹{soldPlayer.basePrice.toLocaleString()}
+              </span>
+            </div>
           </div>
         </motion.div>
       )}

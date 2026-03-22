@@ -13,6 +13,7 @@ export interface Player {
   status: PlayerStatus;
   teamId: string | null;
   tournamentId?: string;
+  updatedAt?: number;
   stats: {
     matches: number;
     raidPoints: number;
