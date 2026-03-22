@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Plus, Play, Square, UserPlus, Users, Trash2, Edit2, Trophy, Tv, Copy, Key } from 'lucide-react';
+import { Plus, Play, Square, UserPlus, Users, Trash2, Edit2, Trophy, Tv, Copy, Key, FileUp } from 'lucide-react';
 import { rtdb } from '../firebase';
 import { ref, onValue, update, push, remove, set, get, serverTimestamp } from 'firebase/database';
 import { Player, Team, AuctionState, OperationType, Tournament } from '../types';
@@ -96,6 +96,70 @@ export const AdminDashboard = () => {
     } catch (err) {
       handleDatabaseError(err, OperationType.CREATE, `tournaments/${newPlayer.tournamentId}/players`);
     }
+  };
+
+  const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!newPlayer.tournamentId) {
+      alert("Please select an auction pool first");
+      e.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target?.result as string;
+      const lines = text.split('\n');
+      const playersToAdd: any[] = [];
+
+      function getPosition(role: string) {
+        if (!role) return 'Raider';
+        const r = role.toLowerCase();
+        if (r.includes('raider') || r.includes('redar') || r.includes('reider') || r.includes('raundar')) return 'Raider';
+        if (r.includes('corner') || r.includes('cover') || r.includes('defender')) return 'Defender';
+        if (r.includes('all rounder') || r.includes('all-rounder') || r.includes('allrounder')) return 'All-rounder';
+        return 'Raider';
+      }
+
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(',');
+        if (row.length < 3 || !row[1] || !row[1].trim()) continue;
+
+        playersToAdd.push({
+          name: row[1].trim(),
+          category: 'C',
+          position: getPosition(row[2]),
+          basePrice: 0,
+          currentBid: 0,
+          currentBidderId: null,
+          status: 'unsold',
+          teamId: null,
+          stats: { matches: 0, raidPoints: 0, tacklePoints: 0 }
+        });
+      }
+
+      if (playersToAdd.length === 0) {
+        alert("No valid players found in CSV");
+        return;
+      }
+
+      if (!confirm(`Found ${playersToAdd.length} players. Add them to the pool?`)) return;
+
+      try {
+        const updates: any = {};
+        playersToAdd.forEach(player => {
+          const newPlayerId = push(ref(rtdb, `tournaments/${newPlayer.tournamentId}/players`)).key;
+          updates[`tournaments/${newPlayer.tournamentId}/players/${newPlayerId}`] = player;
+        });
+        await update(ref(rtdb), updates);
+        alert(`Successfully added ${playersToAdd.length} players!`);
+      } catch (err) {
+        handleDatabaseError(err, OperationType.CREATE, `tournaments/${newPlayer.tournamentId}/players`);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   const addTeam = async () => {
@@ -481,6 +545,22 @@ export const AdminDashboard = () => {
               >
                 ADD PLAYER
               </button>
+
+              <div className="pt-6 border-t border-zinc-800">
+                <div className="flex flex-col items-center gap-4 p-6 border-2 border-dashed border-zinc-800 rounded-2xl hover:border-emerald-500/50 transition-all group relative overflow-hidden">
+                  <FileUp className="w-8 h-8 text-zinc-500 group-hover:text-emerald-500 transition-colors" />
+                  <div className="text-center">
+                    <p className="text-sm font-bold text-zinc-300">Bulk Upload CSV</p>
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Player Name, Role (e.g. Raider)</p>
+                  </div>
+                  <input 
+                    type="file" 
+                    accept=".csv"
+                    onChange={handleBulkUpload}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
