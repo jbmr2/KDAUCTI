@@ -551,6 +551,44 @@ export const LEDDisplay = () => {
                   </div>
                 )}
               </AnimatePresence>
+
+              {/* Recent Bids Ticker for LED */}
+              <div className="bg-zinc-900/50 rounded-[4vh] p-[3vh] border-4 border-zinc-800/50 flex-1 min-h-0 overflow-hidden">
+                <p className="text-zinc-500 text-[2vh] font-black uppercase tracking-[0.5em] mb-[2vh] italic">LATEST BIDS</p>
+                <div className="space-y-[1vh] overflow-hidden h-full">
+                  <AnimatePresence mode="popLayout">
+                    {bids
+                      .filter(b => b.playerId === currentPlayer.id)
+                      .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+                      .slice(0, 5)
+                      .map((bid, i) => {
+                        const bidder = teams.find(t => t.id === bid.teamId);
+                        return (
+                          <motion.div
+                            key={bid.id}
+                            initial={{ opacity: 0, x: -50 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            className={`flex justify-between items-center px-[2vw] py-[1.5vh] rounded-[2vh] border-2 ${
+                              i === 0 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-zinc-950/50 border-zinc-800/50'
+                            }`}
+                          >
+                            <span className={`text-[3.5vh] font-black uppercase italic tracking-tighter truncate ${
+                              i === 0 ? 'text-white' : 'text-zinc-400'
+                            }`}>
+                              {bidder?.name || 'Unknown'}
+                            </span>
+                            <span className={`text-[4vh] font-black tabular-nums ${
+                              i === 0 ? 'text-emerald-500' : 'text-zinc-500'
+                            }`}>
+                              {bid.amount.toLocaleString()}
+                            </span>
+                          </motion.div>
+                        );
+                      })}
+                  </AnimatePresence>
+                </div>
+              </div>
             </div>
           </div>
         ) : (
