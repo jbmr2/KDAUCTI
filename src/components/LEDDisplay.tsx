@@ -441,7 +441,7 @@ export const LEDDisplay = () => {
   }
 
   return (
-    <div className="h-screen bg-black text-white p-8 flex flex-col overflow-hidden">
+    <div className="h-screen w-screen bg-black text-white p-[2vw] flex flex-col overflow-hidden relative">
       {/* Pool Selector (Auto-hidden in LED mode) */}
       {!new URLSearchParams(window.location.search).get('pool') && (
         <div className="absolute top-4 right-4 opacity-0 hover:opacity-100 transition-opacity z-50">
@@ -457,69 +457,68 @@ export const LEDDisplay = () => {
         </div>
       )}
 
-      <div className="flex-1 flex flex-col justify-between max-w-[1920px] mx-auto w-full">
+      <div className="flex-1 flex flex-col justify-center w-full max-w-full mx-auto">
         {currentPlayer ? (
-          <div className="grid grid-cols-12 gap-12 h-full items-center">
+          <div className="grid grid-cols-12 gap-[4vw] h-full items-center">
             
             {/* Player Info (Left) */}
-            <div className="col-span-7 space-y-12">
+            <div className="col-span-7 flex flex-col justify-center space-y-[4vh]">
               <motion.div 
                 initial={{ opacity: 0, x: -100 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="space-y-6"
+                className="space-y-[4vh]"
               >
-                <div className="flex items-center gap-12">
+                <div className="flex items-center gap-[4vw]">
                   {currentPlayer.image && (
-                    <div className="w-[40vh] h-[40vh] bg-zinc-900 rounded-[3rem] border-4 border-white/10 overflow-hidden flex-shrink-0 shadow-2xl">
+                    <div className="w-[45vh] h-[45vh] bg-zinc-900 rounded-[4vh] border-8 border-white/10 overflow-hidden flex-shrink-0 shadow-[0_0_80px_rgba(0,0,0,0.8)]">
                       <img src={currentPlayer.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     </div>
                   )}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-6">
-                      <span className="px-8 py-3 bg-emerald-600 text-white text-3xl font-black rounded-full uppercase italic shadow-[0_0_30px_rgba(16,185,129,0.3)]">
+                  <div className="flex-1 space-y-[2vh]">
+                    <div className="flex items-center gap-[2vw]">
+                      <span className="px-[3vw] py-[1.5vh] bg-emerald-600 text-white text-[4vh] font-black rounded-full uppercase italic shadow-[0_0_40px_rgba(16,185,129,0.4)]">
                         CATEGORY {currentPlayer.category}
                       </span>
-                      <span className="px-8 py-3 bg-zinc-900 text-zinc-400 text-3xl font-black rounded-full uppercase italic border border-zinc-800">
+                      <span className="px-[3vw] py-[1.5vh] bg-zinc-900 text-zinc-400 text-[4vh] font-black rounded-full uppercase italic border-2 border-zinc-800">
                         {currentPlayer.position}
                       </span>
                     </div>
                     
-                    <h1 className="text-[8rem] font-black italic tracking-tighter uppercase leading-[0.85] text-white">
+                    <h1 className="text-[14vh] font-black italic tracking-tighter uppercase leading-[0.8] text-white drop-shadow-2xl">
                       {currentPlayer.name}
                     </h1>
                   </div>
                 </div>
-
-
               </motion.div>
             </div>
 
             {/* Bid Info (Right) */}
-            <div className="col-span-5 flex flex-col gap-6">
+            <div className="col-span-5 flex flex-col gap-[4vh] justify-center h-full">
               {/* Status Header */}
               <div className="text-center">
-                <div className={`inline-block px-10 py-3 rounded-full text-3xl font-black uppercase tracking-[0.2em] mb-4 ${
-                  currentPlayer.status === 'sold' ? 'bg-emerald-600 shadow-[0_0_50px_rgba(16,185,129,0.5)]' : 
-                  currentPlayer.status === 'unsold' ? 'bg-zinc-800 text-zinc-500' :
-                  'bg-yellow-500 text-black shadow-[0_0_50px_rgba(234,179,8,0.5)]'
+                <div className={`inline-block px-[4vw] py-[2vh] rounded-full text-[4vh] font-black uppercase tracking-[0.3em] mb-[2vh] border-4 ${
+                  currentPlayer.status === 'sold' ? 'bg-emerald-600 border-emerald-400 shadow-[0_0_60px_rgba(16,185,129,0.6)]' : 
+                  currentPlayer.status === 'unsold' ? 'bg-zinc-800 border-zinc-700 text-zinc-500' :
+                  'bg-yellow-500 border-yellow-400 text-black shadow-[0_0_60px_rgba(234,179,8,0.6)]'
                 }`}>
-                  {currentPlayer.status === 'current' ? 'Bidding Live' : currentPlayer.status}
+                  {currentPlayer.status === 'current' ? 'BIDDING LIVE' : currentPlayer.status.toUpperCase()}
                 </div>
               </div>
 
               {/* Price Display */}
               <motion.div 
-                key={currentPlayer.currentBid}
+                key={currentPlayer.currentBid || currentPlayer.basePrice}
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="bg-zinc-900 rounded-[3rem] p-10 border-4 border-emerald-500/50 flex flex-col items-center justify-center shadow-[inset_0_0_100px_rgba(0,0,0,0.5)]"
+                className="bg-zinc-900/80 backdrop-blur-3xl rounded-[6vh] p-[6vh] border-8 border-emerald-500/50 flex flex-col items-center justify-center shadow-[0_40px_100px_rgba(0,0,0,0.8),inset_0_0_80px_rgba(0,0,0,0.6)]"
               >
-                <p className="text-zinc-500 text-2xl font-black uppercase mb-3 tracking-widest">
-                  {currentPlayer.currentBidderId ? 'Current Bid' : 'Base Price'}
+                <p className="text-zinc-500 text-[3vh] font-black uppercase mb-[1vh] tracking-[0.5em] italic">
+                  {currentPlayer.currentBidderId ? 'CURRENT BID' : 'BASE PRICE'}
                 </p>
-                <div className="text-[8rem] font-black italic text-emerald-500 leading-none drop-shadow-[0_0_50px_rgba(16,185,129,0.5)]">
-                  {(currentPlayer.currentBid || currentPlayer.basePrice).toLocaleString()} Points
+                <div className="text-[16vh] font-black italic text-emerald-500 leading-none drop-shadow-[0_0_60px_rgba(16,185,129,0.6)] tracking-tighter">
+                  {(currentPlayer.currentBid || currentPlayer.basePrice).toLocaleString()}
                 </div>
+                <p className="text-emerald-500/50 text-[4vh] font-black uppercase tracking-[0.2em] mt-[1vh]">POINTS</p>
               </motion.div>
 
               {/* Current Bidder */}
@@ -530,85 +529,40 @@ export const LEDDisplay = () => {
                     initial={{ y: 50, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: -50, opacity: 0 }}
-                    className="flex items-center justify-center gap-8 bg-emerald-600/10 p-6 rounded-[2.5rem] border-2 border-emerald-500/20"
+                    className="flex items-center justify-center gap-[3vw] bg-zinc-900/60 backdrop-blur-2xl p-[3vh] rounded-[4vh] border-4 border-emerald-500/30 shadow-2xl"
                   >
-                    {currentBidder.logo ? (
-                      <img src={currentBidder.logo} className="w-24 h-24 rounded-full shadow-2xl border-4 border-emerald-500" />
-                    ) : (
-                      <Users className="w-24 h-24 text-emerald-500" />
-                    )}
-                    <div className="text-left">
-                      <p className="text-emerald-500/60 text-xl font-black uppercase tracking-widest mb-1">Highest Bidder</p>
-                      <h2 className="text-5xl font-black uppercase italic tracking-tighter">{currentBidder.name}</h2>
+                    <div className="w-[15vh] h-[15vh] bg-white rounded-[3vh] p-[1vh] shadow-2xl overflow-hidden flex-shrink-0 border-4 border-emerald-500">
+                      {currentBidder.logo ? (
+                        <img src={currentBidder.logo} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                      ) : (
+                        <Users className="w-full h-full text-emerald-500 p-[2vh]" />
+                      )}
+                    </div>
+                    <div className="text-left min-w-0">
+                      <p className="text-emerald-500 text-[2vh] font-black uppercase tracking-[0.5em] mb-[0.5vh] opacity-60">LEADING BIDDER</p>
+                      <h2 className="text-[7vh] font-black text-white uppercase italic leading-none truncate tracking-tighter">
+                        {currentBidder.name}
+                      </h2>
                     </div>
                   </motion.div>
                 ) : (
-                  <div className="h-24 flex items-center justify-center">
-                    <p className="text-zinc-800 text-3xl font-black uppercase tracking-[0.5em] italic">Waiting for Bids</p>
+                  <div className="flex items-center justify-center h-[20vh] border-4 border-dashed border-zinc-800 rounded-[4vh]">
+                    <p className="text-zinc-700 text-[4vh] font-black uppercase tracking-[1em] italic">Awaiting Bids</p>
                   </div>
                 )}
               </AnimatePresence>
-
-              {/* Recent Bids Ticker for LED */}
-              <div className="bg-zinc-900/50 rounded-[2.5rem] p-6 border border-zinc-800/50">
-                <p className="text-zinc-500 text-lg font-black uppercase tracking-widest mb-4">Recent Bids</p>
-                <div className="space-y-2 max-h-[180px] overflow-hidden">
-                  <AnimatePresence mode="popLayout">
-                    {bids
-                      .filter(b => b.playerId === currentPlayer.id)
-                      .sort((a, b) => b.timestamp - a.timestamp)
-                      .slice(0, 5)
-                      .map((bid, i) => {
-                        const bidder = teams.find(t => t.id === bid.teamId);
-                        return (
-                          <motion.div
-                            key={bid.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className={`flex justify-between items-center p-4 rounded-2xl ${i === 0 ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-zinc-950/50'}`}
-                          >
-                            <span className="text-2xl font-black uppercase italic">{bidder?.name}</span>
-                            <span className={`text-3xl font-black ${i === 0 ? 'text-emerald-500' : 'text-zinc-500'}`}>{bid.amount.toLocaleString()} Points</span>
-                          </motion.div>
-                        );
-                      })}
-                  </AnimatePresence>
-                </div>
-              </div>
             </div>
-
           </div>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center gap-12">
-             <Gavel className="w-64 h-64 text-zinc-900" />
-             <h2 className="text-7xl font-black uppercase italic text-zinc-800 tracking-tighter">Auction Not Started</h2>
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center space-y-[4vh]">
+              <div className="inline-block p-[4vh] rounded-full bg-emerald-500/10 border-4 border-emerald-500/20 mb-8">
+                <Gavel className="w-[20vh] h-[20vh] text-emerald-500 animate-pulse" />
+              </div>
+              <h2 className="text-[8vh] font-black italic uppercase text-zinc-500 tracking-tighter">Ready for Next Player</h2>
+            </div>
           </div>
         )}
-
-        {/* Bottom Ticker/Info Bar */}
-        <div className="mt-8 pt-6 border-t border-zinc-900 flex justify-between items-center">
-           <div className="flex items-center gap-10">
-              <div className="flex items-center gap-3">
-                 <Zap className="text-emerald-500 w-8 h-8 fill-emerald-500" />
-                 <span className="text-4xl font-black italic uppercase tracking-tighter">KABADDI AUCTION PRO</span>
-              </div>
-              <div className="h-10 w-px bg-zinc-900"></div>
-              <div className="text-3xl font-black text-zinc-500 uppercase italic">
-                {tournaments.find(t => t.id === selectedPoolId)?.name}
-              </div>
-           </div>
-           
-           <div className="flex items-center gap-6">
-              <div className="text-right">
-                <p className="text-zinc-500 text-lg font-black uppercase tracking-widest">Total Teams</p>
-                <p className="text-3xl font-black text-white">{teams.length}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-zinc-500 text-lg font-black uppercase tracking-widest">Remaining Players</p>
-                <p className="text-3xl font-black text-white">{players.filter(p => p.status === 'unsold').length}</p>
-              </div>
-           </div>
-        </div>
       </div>
     </div>
   );
