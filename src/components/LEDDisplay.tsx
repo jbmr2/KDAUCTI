@@ -493,10 +493,10 @@ export const LEDDisplay = () => {
             </div>
 
             {/* Bid Info (Right) */}
-            <div className="col-span-5 flex flex-col gap-[4vh] justify-center h-full">
+            <div className="col-span-5 flex flex-col gap-[2vh] justify-center h-full max-h-screen">
               {/* Status Header */}
               <div className="text-center">
-                <div className={`inline-block px-[4vw] py-[2vh] rounded-full text-[4vh] font-black uppercase tracking-[0.3em] mb-[2vh] border-4 ${
+                <div className={`inline-block px-[3vw] py-[1.5vh] rounded-full text-[3vh] font-black uppercase tracking-[0.3em] mb-[1vh] border-4 ${
                   currentPlayer.status === 'sold' ? 'bg-emerald-600 border-emerald-400 shadow-[0_0_60px_rgba(16,185,129,0.6)]' : 
                   currentPlayer.status === 'unsold' ? 'bg-zinc-800 border-zinc-700 text-zinc-500' :
                   'bg-yellow-500 border-yellow-400 text-black shadow-[0_0_60px_rgba(234,179,8,0.6)]'
@@ -510,15 +510,15 @@ export const LEDDisplay = () => {
                 key={currentPlayer.currentBid || currentPlayer.basePrice}
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="bg-zinc-900/80 backdrop-blur-3xl rounded-[6vh] p-[6vh] border-8 border-emerald-500/50 flex flex-col items-center justify-center shadow-[0_40px_100px_rgba(0,0,0,0.8),inset_0_0_80px_rgba(0,0,0,0.6)]"
+                className="bg-zinc-900/80 backdrop-blur-3xl rounded-[4vh] p-[4vh] border-8 border-emerald-500/50 flex flex-col items-center justify-center shadow-[0_20px_60px_rgba(0,0,0,0.8)]"
               >
-                <p className="text-zinc-500 text-[3vh] font-black uppercase mb-[1vh] tracking-[0.5em] italic">
+                <p className="text-zinc-500 text-[2.2vh] font-black uppercase mb-[0.5vh] tracking-[0.5em] italic">
                   {currentPlayer.currentBidderId ? 'CURRENT BID' : 'BASE PRICE'}
                 </p>
-                <div className="text-[16vh] font-black italic text-emerald-500 leading-none drop-shadow-[0_0_60px_rgba(16,185,129,0.6)] tracking-tighter">
+                <div className="text-[12vh] font-black italic text-emerald-500 leading-none drop-shadow-[0_0_60px_rgba(16,185,129,0.6)] tracking-tighter">
                   {(currentPlayer.currentBid || currentPlayer.basePrice).toLocaleString()}
                 </div>
-                <p className="text-emerald-500/50 text-[4vh] font-black uppercase tracking-[0.2em] mt-[1vh]">POINTS</p>
+                <p className="text-emerald-500/50 text-[3vh] font-black uppercase tracking-[0.2em] mt-[0.5vh]">POINTS</p>
               </motion.div>
 
               {/* Current Bidder */}
@@ -529,33 +529,33 @@ export const LEDDisplay = () => {
                     initial={{ y: 50, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: -50, opacity: 0 }}
-                    className="flex items-center justify-center gap-[3vw] bg-zinc-900/60 backdrop-blur-2xl p-[3vh] rounded-[4vh] border-4 border-emerald-500/30 shadow-2xl"
+                    className="flex items-center justify-center gap-[2vw] bg-zinc-900/60 backdrop-blur-2xl p-[2vh] rounded-[3vh] border-4 border-emerald-500/30 shadow-2xl"
                   >
-                    <div className="w-[15vh] h-[15vh] bg-white rounded-[3vh] p-[1vh] shadow-2xl overflow-hidden flex-shrink-0 border-4 border-emerald-500">
+                    <div className="w-[12vh] h-[12vh] bg-white rounded-[2vh] p-[0.8vh] shadow-2xl overflow-hidden flex-shrink-0 border-4 border-emerald-500">
                       {currentBidder.logo ? (
                         <img src={currentBidder.logo} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                       ) : (
-                        <Users className="w-full h-full text-emerald-500 p-[2vh]" />
+                        <Users className="w-full h-full text-emerald-500 p-[1.5vh]" />
                       )}
                     </div>
                     <div className="text-left min-w-0">
-                      <p className="text-emerald-500 text-[2vh] font-black uppercase tracking-[0.5em] mb-[0.5vh] opacity-60">LEADING BIDDER</p>
-                      <h2 className="text-[7vh] font-black text-white uppercase italic leading-none truncate tracking-tighter">
+                      <p className="text-emerald-500 text-[1.8vh] font-black uppercase tracking-[0.5em] mb-[0.3vh] opacity-60">LEADING BIDDER</p>
+                      <h2 className="text-[5.5vh] font-black text-white uppercase italic leading-none truncate tracking-tighter">
                         {currentBidder.name}
                       </h2>
                     </div>
                   </motion.div>
                 ) : (
-                  <div className="flex items-center justify-center h-[20vh] border-4 border-dashed border-zinc-800 rounded-[4vh]">
-                    <p className="text-zinc-700 text-[4vh] font-black uppercase tracking-[1em] italic">Awaiting Bids</p>
+                  <div className="flex items-center justify-center h-[12vh] border-4 border-dashed border-zinc-800 rounded-[3vh]">
+                    <p className="text-zinc-700 text-[3vh] font-black uppercase tracking-[0.8em] italic">Awaiting Bids</p>
                   </div>
                 )}
               </AnimatePresence>
 
               {/* Recent Bids Ticker for LED */}
-              <div className="bg-zinc-900/50 rounded-[4vh] p-[3vh] border-4 border-zinc-800/50 flex-1 min-h-0 overflow-hidden">
-                <p className="text-zinc-500 text-[2vh] font-black uppercase tracking-[0.5em] mb-[2vh] italic">LATEST BIDS</p>
-                <div className="space-y-[1vh] overflow-hidden h-full">
+              <div className="bg-zinc-900/40 backdrop-blur-xl rounded-[3vh] p-[2vh] border-4 border-zinc-800/40 flex-1 min-h-0 overflow-hidden flex flex-col">
+                <p className="text-zinc-600 text-[1.5vh] font-black uppercase tracking-[0.5em] mb-[1.5vh] italic border-b border-zinc-800/50 pb-[1vh]">LATEST 5 BIDS</p>
+                <div className="space-y-[0.8vh] overflow-hidden flex-1">
                   <AnimatePresence mode="popLayout">
                     {bids
                       .filter(b => b.playerId === currentPlayer.id)
@@ -569,17 +569,17 @@ export const LEDDisplay = () => {
                             initial={{ opacity: 0, x: -50 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, scale: 0.9 }}
-                            className={`flex justify-between items-center px-[2vw] py-[1.5vh] rounded-[2vh] border-2 ${
-                              i === 0 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-zinc-950/50 border-zinc-800/50'
+                            className={`flex justify-between items-center px-[1.5vw] py-[1vh] rounded-[1.5vh] border-2 ${
+                              i === 0 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-zinc-950/40 border-zinc-900/50'
                             }`}
                           >
-                            <span className={`text-[3.5vh] font-black uppercase italic tracking-tighter truncate ${
-                              i === 0 ? 'text-white' : 'text-zinc-400'
+                            <span className={`text-[2.8vh] font-black uppercase italic tracking-tighter truncate max-w-[60%] ${
+                              i === 0 ? 'text-white' : 'text-zinc-500'
                             }`}>
                               {bidder?.name || 'Unknown'}
                             </span>
-                            <span className={`text-[4vh] font-black tabular-nums ${
-                              i === 0 ? 'text-emerald-500' : 'text-zinc-500'
+                            <span className={`text-[3.2vh] font-black tabular-nums ${
+                              i === 0 ? 'text-emerald-500' : 'text-zinc-600'
                             }`}>
                               {bid.amount.toLocaleString()}
                             </span>
