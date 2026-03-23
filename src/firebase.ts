@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithRedirect, signOut } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
+import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyBjWRoGz8rK7TSLSVl7Db3lpthZaocj4e4',
@@ -18,5 +19,5 @@ export const rtdb = getDatabase(app);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
-export const login = () => signInWithRedirect(auth, googleProvider);
+export const login = () => signInWithPopup(auth, googleProvider);
 export const logout = () => signOut(auth);

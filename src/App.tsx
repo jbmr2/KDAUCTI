@@ -39,7 +39,7 @@ export default function App() {
       const userRef = ref(rtdb, `users/${user.uid}`);
       get(userRef).then((snapshot) => {
         if (!snapshot.exists()) {
-          const isInitialAdmin = user.email === 'jbmrsports@gmail.com';
+          const isInitialAdmin = user.email === 'jbmrsports@gmail.com' || user.email === 'jbmr.auction@gmail.com';
           set(userRef, {
             email: user.email,
             name: user.displayName || 'User',
@@ -53,7 +53,14 @@ export default function App() {
       const roleRef = ref(rtdb, `users/${user.uid}/role`);
       const unsub = onValue(roleRef, (snapshot) => {
         const role = snapshot.val();
-        setIsAdmin(role === 'admin' || user.email === 'jbmrsports@gmail.com');
+        const isAdminUser = role === 'admin' || user.email === 'jbmrsports@gmail.com' || user.email === 'jbmr.auction@gmail.com';
+        setIsAdmin(isAdminUser);
+        
+        // Auto-switch to admin if first time loading and is admin
+        const params = new URLSearchParams(window.location.search);
+        if (isAdminUser && !params.get('view') && currentView === 'auction') {
+          setCurrentView('admin');
+        }
       });
       return () => unsub();
     } else {

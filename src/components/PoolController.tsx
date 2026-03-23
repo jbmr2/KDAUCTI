@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Key, LogIn, Users, UserPlus, Trophy, Gavel, Play, CheckCircle, 
+  Key, LogIn, Users, Trophy, Gavel, Play, CheckCircle, 
   XCircle, TrendingUp, RefreshCw, ArrowLeft, ArrowRight, User as UserIcon, Trash2, Undo2,
-  Tv, Copy
+  Tv, Copy, FileUp, UserPlus
 } from 'lucide-react';
 import { rtdb } from '../firebase';
 import { ref, onValue, update, push, set, get, serverTimestamp } from 'firebase/database';
@@ -13,8 +13,13 @@ import { handleDatabaseError } from '../services/errorService';
 export const PoolController = () => {
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
-  const [isAuthorized, setIsAuthorized] = useState(false);
-  const [activePool, setActivePool] = useState<Tournament | null>(null);
+  const [isAuthorized, setIsAuthorized] = useState(() => {
+    return sessionStorage.getItem('pool_authorized') === 'true';
+  });
+  const [activePool, setActivePool] = useState<Tournament | null>(() => {
+    const saved = sessionStorage.getItem('active_pool');
+    return saved ? JSON.parse(saved) : null;
+  });
   
   const [players, setPlayers] = useState<Player[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -26,7 +31,7 @@ export const PoolController = () => {
   const [customBidAmount, setCustomBidAmount] = useState<string>('');
 
   // Computed values
-  const poolPlayers = players.filter(p => p.status === 'unsold' || p.status === 'current');
+  const poolPlayers = players.filter(p => p.status === 'available' || p.status === 'unsold' || p.status === 'current');
   const activePlayer = poolPlayers[currentIndex];
   const currentBids = bids.filter(b => b.playerId === activePlayer?.id).sort((a, b) => b.timestamp - a.timestamp).slice(0, 20);
 
@@ -34,6 +39,7 @@ export const PoolController = () => {
 
   const [newPlayer, setNewPlayer] = useState({
     name: '',
+    image: '',
     category: 'None' as any,
     position: 'Raider',
     basePrice: '' as any,
@@ -45,6 +51,13 @@ export const PoolController = () => {
     logo: '',
     budget: '' as any
   });
+
+  // Sync Team Budget to Pool Initial Purse
+  useEffect(() => {
+    if (activePool && (newTeam.budget === '' || !newTeam.budget)) {
+      setNewTeam(prev => ({ ...prev, budget: activePool.initialPurse || 50000000 }));
+    }
+  }, [activePool?.id]);
 
   // Pre-fill pool ID from URL
   useEffect(() => {
@@ -61,9 +74,12 @@ export const PoolController = () => {
     const pool = snapshot.val() as Tournament;
 
     if (pool && String(pool.password) === password) {
-      setActivePool({ id: loginId, ...pool });
-      setNewTeam(prev => ({ ...prev, budget: pool.initialPurse }));
+      const pData = { id: loginId, ...pool };
+      setActivePool(pData);
+      setNewTeam({ name: '', logo: '', budget: pool.initialPurse || 50000000 });
       setIsAuthorized(true);
+      sessionStorage.setItem('pool_authorized', 'true');
+      sessionStorage.setItem('active_pool', JSON.stringify(pData));
       return;
     }
 
@@ -79,9 +95,12 @@ export const PoolController = () => {
 
       if (match) {
         const p = match[1] as Tournament;
-        setActivePool({ id: match[0], ...p });
-        setNewTeam(prev => ({ ...prev, budget: p.initialPurse }));
+        const pData = { id: match[0], ...p };
+        setActivePool(pData);
+        setNewTeam({ name: '', logo: '', budget: p.initialPurse || 50000000 });
         setIsAuthorized(true);
+        sessionStorage.setItem('pool_authorized', 'true');
+        sessionStorage.setItem('active_pool', JSON.stringify(pData));
         return;
       }
     }
@@ -150,12 +169,104 @@ export const PoolController = () => {
         tournamentId: activePool.id,
         currentBid: 0,
         currentBidderId: null,
-        status: 'unsold',
+        status: 'available',
         teamId: null
       });
-      setNewPlayer({ name: '', category: 'None' as any, position: 'Raider', basePrice: '' as any, stats: { matches: 0, raidPoints: 0, tacklePoints: 0 } });
+      setNewPlayer({ name: '', image: '', category: 'None' as any, position: 'Raider', basePrice: '' as any, stats: { matches: 0, raidPoints: 0, tacklePoints: 0 } });
     } catch (err) {
       handleDatabaseError(err, OperationType.CREATE, `tournaments/${activePool.id}/players`);
+    }
+  };
+
+  const handleBulkImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activePool) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const content = event.target?.result as string;
+      const lines = content.split(/\r?\n/).filter(line => line.trim() !== '');
+      
+      const updates: any = {};
+      let importCount = 0;
+      const now = Date.now();
+
+      // Start from 1 to skip header
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        // Detect separator (Tab or Comma)
+        const separator = line.includes('\t') ? '\t' : ',';
+        const parts = line.split(separator).map(p => p.trim().replace(/^"|"$/g, ''));
+        
+        // Dynamic mapping based on columns
+        // We expect: [0] ID, [1] Name, [2] Role, [3] Base Price, [4] Image (Optional)
+        const name = parts[1];
+        const role = parts[2];
+        const rawPrice = parts[3];
+        const image = parts[4] || '';
+
+        if (!name || name.toLowerCase() === 'player name' || name.toLowerCase().includes('akl player')) continue;
+
+        // AGGRESSIVE PRICE PARSING
+        // Remove everything except numbers (handles ₹, symbols, spaces)
+        const digitsOnly = (rawPrice || '').replace(/[^\d]/g, '');
+        let price = parseInt(digitsOnly);
+        
+        // If parsing failed or result is 0, check if there's any value in parts[3]
+        // If it's truly missing or 0, use 500 as default since that's your sheet's minimum
+        if (isNaN(price) || price <= 0) {
+          price = 500;
+        }
+
+        // Map Role to Position
+        let position: any = 'Raider';
+        const roleLower = (role || '').toLowerCase();
+        if (roleLower.includes('corner') || roleLower.includes('cover') || roleLower.includes('defender')) {
+          position = 'Defender';
+        } else if (roleLower.includes('rounder') || roleLower.includes('raundar')) {
+          position = 'All-rounder';
+        }
+
+        const newPlayerRef = push(ref(rtdb, `tournaments/${activePool.id}/players`));
+        updates[`tournaments/${activePool.id}/players/${newPlayerRef.key}`] = {
+          name,
+          image,
+          category: 'None',
+          position,
+          basePrice: price, // This will now be 500
+          tournamentId: activePool.id,
+          currentBid: 0,
+          currentBidderId: null,
+          status: 'available',
+          teamId: null,
+          updatedAt: now,
+          stats: { matches: 0, raidPoints: 0, tacklePoints: 0 }
+        };
+        importCount++;
+      }
+
+      if (importCount > 0) {
+        try {
+          await update(ref(rtdb), updates);
+          alert(`✅ SUCCESS!\n\nImported ${importCount} players.\nBase Price set to: ₹500 (as per your file).`);
+        } catch (err) {
+          handleDatabaseError(err, OperationType.UPDATE, 'bulk-import');
+        }
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const clearAllPlayers = async () => {
+    if (!activePool || !window.confirm("WARNING: This will delete ALL players in this pool. Continue?")) return;
+    try {
+      await set(ref(rtdb, `tournaments/${activePool.id}/players`), null);
+      alert("All players deleted. You can now re-import the CSV.");
+    } catch (err) {
+      handleDatabaseError(err, OperationType.DELETE, 'clear-players');
     }
   };
 
@@ -194,6 +305,42 @@ export const PoolController = () => {
     } catch (err) {
       handleDatabaseError(err, OperationType.CREATE, `tournaments/${activePool.id}/teams`);
     }
+  };
+
+  const handlePlayerImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, player: Player) => {
+    const file = e.target.files?.[0];
+    if (!file || !activePool) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('filename', `player_${player.id}_${Date.now()}.${file.name.split('.').pop()}`);
+
+    const uploadUrl = localStorage.getItem('hostinger_upload_url') || 'upload.php';
+
+    try {
+      const response = await fetch(uploadUrl, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const imageUrl = data.url; 
+        
+        const updates: any = {};
+        updates[`tournaments/${activePool.id}/players/${player.id}/image`] = imageUrl;
+        await update(ref(rtdb), updates);
+        alert("Image uploaded successfully!");
+      } else {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error("Upload failed:", response.status, errorText);
+        alert(`Failed to upload image (Status: ${response.status}).\n\n1. Ensure 'upload.php' is uploaded to your Hostinger server.\n2. Ensure the 'images/' folder exists and is writable (777).`);
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert(`Error connecting to upload script.\n\nURL: ${uploadUrl}\n\nMake sure the URL is correct and CORS is enabled in upload.php.`);
+    }
+    e.target.value = '';
   };
 
   const startAuction = async (player: Player) => {
@@ -439,7 +586,11 @@ export const PoolController = () => {
                 </div>
               </div>
           </div>
-          <button onClick={() => setIsAuthorized(false)} className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs font-bold">LOGOUT</button>
+          <button onClick={() => {
+            setIsAuthorized(false);
+            sessionStorage.removeItem('pool_authorized');
+            sessionStorage.removeItem('active_pool');
+          }} className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs font-bold">LOGOUT</button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -583,6 +734,7 @@ export const PoolController = () => {
               <h3 className="text-lg font-black italic uppercase flex items-center gap-2 mb-6"><UserPlus className="text-emerald-500" /> Add Player</h3>
               <div className="space-y-4">
                 <input type="text" placeholder="Name" value={newPlayer.name} onChange={e => setNewPlayer({...newPlayer, name: e.target.value})} className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs" />
+                <input type="text" placeholder="Image URL (Optional)" value={newPlayer.image} onChange={e => setNewPlayer({...newPlayer, image: e.target.value})} className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs" />
                 <div className="grid grid-cols-2 gap-4">
                   <select value={newPlayer.category} onChange={e => setNewPlayer({...newPlayer, category: e.target.value as any})} className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs">
                     <option value="None">Category None</option>
@@ -593,7 +745,16 @@ export const PoolController = () => {
                   </select>
                 </div>
                 <input type="number" placeholder="Base Price" value={isNaN(newPlayer.basePrice) ? '' : newPlayer.basePrice} onChange={e => setNewPlayer({...newPlayer, basePrice: e.target.value === '' ? '' : parseInt(e.target.value)})} className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs" />
-                <button onClick={addPlayer} className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl text-xs">ADD PLAYER</button>
+                <div className="grid grid-cols-2 gap-4">
+                  <button onClick={addPlayer} className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl text-xs">ADD PLAYER</button>
+                  <label className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs text-center cursor-pointer flex items-center justify-center gap-2">
+                    <UserPlus className="w-4 h-4" /> BULK IMPORT (CSV)
+                    <input type="file" accept=".csv" onChange={handleBulkImport} className="hidden" />
+                  </label>
+                </div>
+                <button onClick={clearAllPlayers} className="w-full py-2 bg-red-600/10 hover:bg-red-600/20 text-red-500 font-bold rounded-xl text-[10px] transition-all border border-red-500/20 mt-2">
+                  <Trash2 className="w-3 h-3 inline mr-1" /> CLEAR ALL PLAYERS (RESET POOL)
+                </button>
               </div>
             </div>
 
@@ -602,8 +763,20 @@ export const PoolController = () => {
               <div className="space-y-4">
                 <input type="text" placeholder="Team Name" value={newTeam.name} onChange={e => setNewTeam({...newTeam, name: e.target.value})} className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs" />
                 <div className="grid grid-cols-2 gap-4">
-                  <input type="number" placeholder="Team Purse Value" value={isNaN(newTeam.budget) ? '' : newTeam.budget} onChange={e => setNewTeam({...newTeam, budget: e.target.value === '' ? '' : parseInt(e.target.value)})} className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs" />
-                  <input type="text" placeholder="Logo URL" value={newTeam.logo} onChange={e => setNewTeam({...newTeam, logo: e.target.value})} className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs" />
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-black text-zinc-500 uppercase px-1">Team Purse Value (₹)</label>
+                    <input 
+                      type="number" 
+                      placeholder="e.g. 50000000" 
+                      value={newTeam.budget === '' ? '' : newTeam.budget} 
+                      onChange={e => setNewTeam({...newTeam, budget: e.target.value === '' ? '' : parseInt(e.target.value)})} 
+                      className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs" 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-black text-zinc-500 uppercase px-1">Logo URL</label>
+                    <input type="text" placeholder="https://..." value={newTeam.logo} onChange={e => setNewTeam({...newTeam, logo: e.target.value})} className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs" />
+                  </div>
                 </div>
                 <button onClick={addTeam} className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl text-xs">ADD TEAM</button>
               </div>
@@ -616,12 +789,30 @@ export const PoolController = () => {
           <h3 className="text-lg font-black italic uppercase mb-6">Pool Player List</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {players.map(p => (
-              <div key={p.id} className="p-4 bg-zinc-950 border border-zinc-800 rounded-2xl flex justify-between items-center">
-                <div>
-                  <p className="font-bold text-xs uppercase">{p.name}</p>
+              <div key={p.id} className="p-4 bg-zinc-950 border border-zinc-800 rounded-2xl flex items-center gap-4">
+                <div className="w-12 h-12 rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden flex-shrink-0 relative group">
+                  {p.image ? (
+                    <img src={p.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-zinc-700">
+                      <UserIcon className="w-6 h-6" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <FileUp className="w-4 h-4 text-white" />
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={(e) => handlePlayerImageUpload(e, p)}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-xs uppercase truncate">{p.name}</p>
                   <p className="text-[8px] text-zinc-500 font-bold uppercase">{p.status} • ₹{p.basePrice.toLocaleString()}</p>
                 </div>
-                <button onClick={async () => window.confirm('Delete?') && set(ref(rtdb, `players/${p.id}`), null)} className="p-2 text-zinc-800 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                <button onClick={async () => window.confirm('Delete?') && set(ref(rtdb, `tournaments/${activePool?.id}/players/${p.id}`), null)} className="p-2 text-zinc-800 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
               </div>
             ))}
           </div>

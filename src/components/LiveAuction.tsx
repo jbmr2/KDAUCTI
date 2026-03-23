@@ -85,7 +85,7 @@ export const LiveAuction = () => {
   // Filtered Players by Pool (Only show Unsold or currently being auctioned)
   const poolPlayers = players
     .filter(p => p.tournamentId === selectedPoolId)
-    .filter(p => p.status === 'unsold' || p.status === 'current');
+    .filter(p => p.status === 'available' || p.status === 'unsold' || p.status === 'current');
 
   const currentPlayer = poolPlayers[currentIndex];
   const poolTeams = teams.filter(t => t.tournamentId === selectedPoolId);
@@ -225,6 +225,7 @@ export const LiveAuction = () => {
       const updates: any = {};
       updates[`tournaments/${selectedPoolId}/players/${currentPlayer.id}/status`] = 'sold';
       updates[`tournaments/${selectedPoolId}/players/${currentPlayer.id}/teamId`] = team.id;
+      updates[`tournaments/${selectedPoolId}/players/${currentPlayer.id}/updatedAt`] = serverTimestamp();
       updates[`tournaments/${selectedPoolId}/teams/${team.id}/budget`] = team.budget - currentPlayer.currentBid;
       updates[`tournaments/${selectedPoolId}/teams/${team.id}/totalPlayers`] = team.totalPlayers + 1;
       
@@ -244,6 +245,7 @@ export const LiveAuction = () => {
       updates[`tournaments/${selectedPoolId}/players/${currentPlayer.id}/status`] = 'unsold';
       updates[`tournaments/${selectedPoolId}/players/${currentPlayer.id}/currentBid`] = 0;
       updates[`tournaments/${selectedPoolId}/players/${currentPlayer.id}/currentBidderId`] = null;
+      updates[`tournaments/${selectedPoolId}/players/${currentPlayer.id}/updatedAt`] = serverTimestamp();
       
       updates[`tournaments/${selectedPoolId}/auctionState/status`] = 'idle';
       updates[`tournaments/${selectedPoolId}/auctionState/currentPlayerId`] = null;
@@ -316,18 +318,23 @@ export const LiveAuction = () => {
             {/* Current Player Card */}
             <div className="lg:col-span-8 space-y-8">
               <div className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl">
-                <div className="relative h-48 bg-gradient-to-br from-emerald-600/10 to-zinc-900 flex items-center justify-center">
-                  <span className="absolute top-6 left-6 px-4 py-2 bg-emerald-500 text-white text-xs font-black rounded-full uppercase tracking-widest shadow-lg">
+                <div className="relative h-64 bg-gradient-to-br from-emerald-600/10 to-zinc-900 flex items-center justify-center overflow-hidden">
+                  <span className="absolute top-6 left-6 px-4 py-2 bg-emerald-500 text-white text-xs font-black rounded-full uppercase tracking-widest shadow-lg z-10">
                     CATEGORY {currentPlayer.category}
                   </span>
-                  <div className={`absolute top-6 right-6 px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest ${
+                  <div className={`absolute top-6 right-6 px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest z-10 ${
                     currentPlayer.status === 'sold' ? 'bg-emerald-500/20 text-emerald-500' : 
-                    currentPlayer.status === 'unsold' ? 'bg-zinc-800 text-zinc-400' :
+                    currentPlayer.status === 'unsold' ? 'bg-red-500/20 text-red-500' :
+                    currentPlayer.status === 'available' ? 'bg-zinc-800 text-zinc-400' :
                     'bg-yellow-500/20 text-yellow-500'
                   }`}>
                     {currentPlayer.status}
                   </div>
-                  <User className="w-24 h-24 text-emerald-500/30" />
+                  {currentPlayer.image ? (
+                    <img src={currentPlayer.image} alt={currentPlayer.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <User className="w-24 h-24 text-emerald-500/30" />
+                  )}
                 </div>
 
                 <div className="p-10">

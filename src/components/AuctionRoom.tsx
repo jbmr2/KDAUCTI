@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Gavel, Clock, TrendingUp, Users, Shield, Zap, User } from 'lucide-react';
 import { rtdb, auth } from '../firebase';
-import { ref, onValue, update, push, query, orderByChild, limitToLast, serverTimestamp } from 'firebase/database';
+import { ref, onValue, update, push, query, orderByChild, limitToLast, serverTimestamp, get } from 'firebase/database';
 import { Player, Team, Bid, AuctionState, OperationType } from '../types';
 import { handleDatabaseError } from '../services/errorService';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -190,12 +190,16 @@ export const AuctionRoom = () => {
             animate={{ opacity: 1, x: 0 }}
             className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl"
           >
-            <div className="relative h-64 bg-gradient-to-br from-emerald-600/20 to-zinc-900 flex items-center justify-center">
-              <div className="absolute top-4 left-4 flex gap-2">
+            <div className="relative h-64 bg-gradient-to-br from-emerald-600/20 to-zinc-900 flex items-center justify-center overflow-hidden">
+              <div className="absolute top-4 left-4 flex gap-2 z-10">
                 <span className="px-3 py-1 bg-emerald-500 text-white text-xs font-bold rounded-full">CATEGORY {currentPlayer?.category}</span>
                 <span className="px-3 py-1 bg-zinc-800 text-zinc-300 text-xs font-bold rounded-full uppercase">{currentPlayer?.position}</span>
               </div>
-              <User className="w-32 h-32 text-emerald-500/50" />
+              {currentPlayer?.image ? (
+                <img src={currentPlayer.image} alt={currentPlayer.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              ) : (
+                <User className="w-32 h-32 text-emerald-500/50" />
+              )}
             </div>
             
             <div className="p-8">

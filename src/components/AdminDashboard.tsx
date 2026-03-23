@@ -11,9 +11,11 @@ export const AdminDashboard = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [auctionState, setAuctionState] = useState<AuctionState | null>(null);
+  const [uploadUrl, setUploadUrl] = useState(() => localStorage.getItem('hostinger_upload_url') || 'upload.php');
   
   const [newPlayer, setNewPlayer] = useState({
     name: '',
+    image: '',
     category: 'None' as any,
     position: 'Raider',
     basePrice: '' as any,
@@ -89,10 +91,10 @@ export const AdminDashboard = () => {
         basePrice: parseInt(newPlayer.basePrice) || 0,
         currentBid: 0,
         currentBidderId: null,
-        status: 'unsold',
+        status: 'available',
         teamId: null
       });
-      setNewPlayer({ name: '', category: 'None' as any, position: 'Raider', basePrice: '' as any, tournamentId: '', stats: { matches: 0, raidPoints: 0, tacklePoints: 0 } });
+      setNewPlayer({ name: '', image: '', category: 'None' as any, position: 'Raider', basePrice: '' as any, tournamentId: '', stats: { matches: 0, raidPoints: 0, tacklePoints: 0 } });
     } catch (err) {
       handleDatabaseError(err, OperationType.CREATE, `tournaments/${newPlayer.tournamentId}/players`);
     }
@@ -123,17 +125,34 @@ export const AdminDashboard = () => {
       }
 
       for (let i = 1; i < lines.length; i++) {
-        const row = lines[i].split(',');
-        if (row.length < 3 || !row[1] || !row[1].trim()) continue;
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        // Detect separator (Tab or Comma)
+        const separator = line.includes('\t') ? '\t' : ',';
+        const row = line.split(separator).map(p => p.trim().replace(/^"|"$/g, ''));
+        
+        if (!row[1] || !row[1].trim() || row[1].toLowerCase() === 'player name' || row[1].toLowerCase().includes('akl player')) continue;
+
+        // AGGRESSIVE PRICE PARSING
+        const rawPrice = row[3];
+        const digitsOnly = (rawPrice || '').replace(/[^\d]/g, '');
+        let price = parseInt(digitsOnly);
+        if (isNaN(price) || price <= 0) {
+          price = 500; // Default to 500 if missing or 0
+        }
+
+        const image = row[4] || '';
 
         playersToAdd.push({
           name: row[1].trim(),
-          category: 'C',
+          image,
+          category: 'None',
           position: getPosition(row[2]),
-          basePrice: 0,
+          basePrice: price,
           currentBid: 0,
           currentBidderId: null,
-          status: 'unsold',
+          status: 'available',
           teamId: null,
           stats: { matches: 0, raidPoints: 0, tacklePoints: 0 }
         });
@@ -260,6 +279,7 @@ export const AdminDashboard = () => {
       const updates: any = {};
       updates[`tournaments/${player.tournamentId}/players/${player.id}/status`] = 'sold';
       updates[`tournaments/${player.tournamentId}/players/${player.id}/teamId`] = player.currentBidderId;
+      updates[`tournaments/${player.tournamentId}/players/${player.id}/updatedAt`] = serverTimestamp();
 
       const team = teams.find(t => t.id === player.currentBidderId && t.tournamentId === player.tournamentId);
       if (team) {
@@ -288,7 +308,7 @@ export const AdminDashboard = () => {
       const playersData = playersSnap.val();
       if (playersData) {
         Object.keys(playersData).forEach((id) => {
-          updates[`tournaments/${tournamentId}/players/${id}/status`] = 'unsold';
+          updates[`tournaments/${tournamentId}/players/${id}/status`] = 'available';
           updates[`tournaments/${tournamentId}/players/${id}/teamId`] = null;
           updates[`tournaments/${tournamentId}/players/${id}/currentBid`] = 0;
           updates[`tournaments/${tournamentId}/players/${id}/currentBidderId`] = null;
@@ -323,6 +343,40 @@ export const AdminDashboard = () => {
     } catch (err) {
       handleDatabaseError(err, OperationType.DELETE, `tournaments/${tournamentId}/players/${playerId}`);
     }
+  };
+
+  const handlePlayerImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, player: Player) => {
+    const file = e.target.files?.[0];
+    if (!file || !player.tournamentId) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('filename', `player_${player.id}_${Date.now()}.${file.name.split('.').pop()}`);
+
+    try {
+      const response = await fetch(uploadUrl, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const imageUrl = data.url; 
+        
+        const updates: any = {};
+        updates[`tournaments/${player.tournamentId}/players/${player.id}/image`] = imageUrl;
+        await update(ref(rtdb), updates);
+        alert("Image uploaded successfully!");
+      } else {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error("Upload failed:", response.status, errorText);
+        alert(`Failed to upload image (Status: ${response.status}).\n\n1. Ensure 'upload.php' is uploaded to your Hostinger server.\n2. Ensure the 'images/' folder exists and is writable (777).\n3. Check your Upload URL in Settings below.`);
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert(`Error connecting to upload script.\n\nURL: ${uploadUrl}\n\nMake sure the URL is correct and CORS is enabled in upload.php.`);
+    }
+    e.target.value = '';
   };
 
   const copyToClipboard = (text: string, message: string) => {
@@ -461,20 +515,26 @@ export const AdminDashboard = () => {
                 ))}
               </select>
               <div className="grid grid-cols-2 gap-4">
-                <input 
-                  type="number" 
-                  placeholder="Budget" 
-                  value={isNaN(newTeam.budget) ? '' : newTeam.budget}
-                  onChange={e => setNewTeam({...newTeam, budget: e.target.value === '' ? '' : parseInt(e.target.value)})}
-                  className="w-full p-4 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none transition-all"
-                />
-                <input 
-                  type="text" 
-                  placeholder="Logo URL" 
-                  value={newTeam.logo}
-                  onChange={e => setNewTeam({...newTeam, logo: e.target.value})}
-                  className="w-full p-4 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none transition-all"
-                />
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase px-1">Team Purse Value (₹)</label>
+                  <input 
+                    type="number" 
+                    placeholder="Budget" 
+                    value={newTeam.budget === '' ? '' : newTeam.budget}
+                    onChange={e => setNewTeam({...newTeam, budget: e.target.value === '' ? '' : parseInt(e.target.value)})}
+                    className="w-full p-4 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none transition-all"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase px-1">Logo URL</label>
+                  <input 
+                    type="text" 
+                    placeholder="Logo URL" 
+                    value={newTeam.logo}
+                    onChange={e => setNewTeam({...newTeam, logo: e.target.value})}
+                    className="w-full p-4 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none transition-all"
+                  />
+                </div>
               </div>
               <button 
                 onClick={addTeam}
@@ -497,6 +557,13 @@ export const AdminDashboard = () => {
                 placeholder="Player Name" 
                 value={newPlayer.name}
                 onChange={e => setNewPlayer({...newPlayer, name: e.target.value})}
+                className="w-full p-4 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none transition-all"
+              />
+              <input 
+                type="text" 
+                placeholder="Player Image URL (Optional)" 
+                value={newPlayer.image}
+                onChange={e => setNewPlayer({...newPlayer, image: e.target.value})}
                 className="w-full p-4 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none transition-all"
               />
               <div className="grid grid-cols-2 gap-4">
@@ -561,6 +628,40 @@ export const AdminDashboard = () => {
                   />
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Hostinger Upload Settings */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8">
+          <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+            <Tv className="w-5 h-5 text-emerald-500" />
+            HOSTINGER UPLOAD SETTINGS
+          </h3>
+          <div className="space-y-4 max-w-2xl">
+            <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl text-xs text-zinc-400 leading-relaxed">
+              <p className="font-bold text-emerald-500 mb-1">Configuration Needed:</p>
+              1. Ensure <code className="text-emerald-400">upload.php</code> is in your Hostinger root folder.<br/>
+              2. Create a folder named <code className="text-emerald-400">images/</code> in the same folder.<br/>
+              3. If testing locally, enter your full domain URL below (e.g. <code className="text-emerald-400">https://yourdomain.com/upload.php</code>).
+            </div>
+            <div className="flex gap-4">
+              <input 
+                type="text" 
+                placeholder="Upload Script URL (e.g. upload.php)" 
+                value={uploadUrl}
+                onChange={e => setUploadUrl(e.target.value)}
+                className="flex-1 p-4 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none transition-all"
+              />
+              <button 
+                onClick={() => {
+                  localStorage.setItem('hostinger_upload_url', uploadUrl);
+                  alert("Settings saved!");
+                }}
+                className="px-8 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-all"
+              >
+                SAVE SETTINGS
+              </button>
             </div>
           </div>
         </div>
@@ -659,6 +760,7 @@ export const AdminDashboard = () => {
               <thead>
                 <tr className="text-zinc-500 text-sm uppercase font-bold border-b border-zinc-800">
                   <th className="pb-4">Name</th>
+                  <th className="pb-4">Photo</th>
                   <th className="pb-4">Pool</th>
                   <th className="pb-4">Category</th>
                   <th className="pb-4">Position</th>
@@ -674,6 +776,30 @@ export const AdminDashboard = () => {
                   .map(player => (
                   <tr key={player.id} className="group hover:bg-zinc-950/50 transition-all">
                     <td className="py-4 font-bold">{player.name}</td>
+                    <td className="py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-zinc-800 overflow-hidden flex-shrink-0 border border-zinc-700">
+                          {player.image ? (
+                            <img src={player.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-zinc-600">
+                              <UserPlus className="w-4 h-4" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="relative group/upload">
+                          <button className="p-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-md transition-all">
+                            <FileUp className="w-3.5 h-3.5" />
+                          </button>
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={(e) => handlePlayerImageUpload(e, player)}
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                          />
+                        </div>
+                      </div>
+                    </td>
                     <td className="py-4 text-xs text-zinc-500">
                       {tournaments.find(t => t.id === player.tournamentId)?.name || 'No Pool'}
                     </td>

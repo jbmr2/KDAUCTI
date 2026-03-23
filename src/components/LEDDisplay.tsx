@@ -123,19 +123,26 @@ export const LEDDisplay = () => {
           animate={{ opacity: 1 }}
           className="w-full h-full grid grid-cols-2 p-[4vw] gap-[4vw] items-center"
         >
-          {/* Left Side: Player Name & Details */}
+          {/* Left Side: Player Image & Name & Details */}
           <motion.div 
             initial={{ x: -100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             className="flex flex-col justify-center gap-[4vh] border-r border-white/10 pr-[4vw]"
           >
-            <div className="space-y-[2vh]">
-              <p className="text-[4vh] text-zinc-500 font-black uppercase tracking-[0.5em] italic">
-                {lastCompletedPlayer.position} • {lastCompletedPlayer.category}
-              </p>
-              <h1 className="text-[15vh] font-black text-white uppercase tracking-tighter leading-[0.85] drop-shadow-2xl italic">
-                {lastCompletedPlayer.name}
-              </h1>
+            <div className="flex items-center gap-8">
+              {lastCompletedPlayer.image && (
+                <div className="w-[30vh] h-[30vh] bg-zinc-900 rounded-[4vh] border-4 border-white/10 overflow-hidden flex-shrink-0">
+                  <img src={lastCompletedPlayer.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                </div>
+              )}
+              <div className="space-y-[2vh]">
+                <p className="text-[4vh] text-zinc-500 font-black uppercase tracking-[0.5em] italic">
+                  {lastCompletedPlayer.position} • {lastCompletedPlayer.category}
+                </p>
+                <h1 className="text-[12vh] font-black text-white uppercase tracking-tighter leading-[0.85] drop-shadow-2xl italic">
+                  {lastCompletedPlayer.name}
+                </h1>
+              </div>
             </div>
 
             <div className="flex items-center gap-6 mt-[4vh]">
@@ -229,18 +236,27 @@ export const LEDDisplay = () => {
                 animate={{ opacity: 1, x: 0 }}
                 className="space-y-6"
               >
-                <div className="flex items-center gap-6">
-                  <span className="px-8 py-3 bg-emerald-600 text-white text-3xl font-black rounded-full uppercase italic shadow-[0_0_30px_rgba(16,185,129,0.3)]">
-                    CATEGORY {currentPlayer.category}
-                  </span>
-                  <span className="px-8 py-3 bg-zinc-900 text-zinc-400 text-3xl font-black rounded-full uppercase italic border border-zinc-800">
-                    {currentPlayer.position}
-                  </span>
+                <div className="flex items-center gap-12">
+                  {currentPlayer.image && (
+                    <div className="w-[40vh] h-[40vh] bg-zinc-900 rounded-[3rem] border-4 border-white/10 overflow-hidden flex-shrink-0 shadow-2xl">
+                      <img src={currentPlayer.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    </div>
+                  )}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-6">
+                      <span className="px-8 py-3 bg-emerald-600 text-white text-3xl font-black rounded-full uppercase italic shadow-[0_0_30px_rgba(16,185,129,0.3)]">
+                        CATEGORY {currentPlayer.category}
+                      </span>
+                      <span className="px-8 py-3 bg-zinc-900 text-zinc-400 text-3xl font-black rounded-full uppercase italic border border-zinc-800">
+                        {currentPlayer.position}
+                      </span>
+                    </div>
+                    
+                    <h1 className="text-[8rem] font-black italic tracking-tighter uppercase leading-[0.85] text-white">
+                      {currentPlayer.name}
+                    </h1>
+                  </div>
                 </div>
-                
-                <h1 className="text-[10rem] font-black italic tracking-tighter uppercase leading-[0.85] text-white">
-                  {currentPlayer.name}
-                </h1>
 
                 <div className="grid grid-cols-3 gap-6 pt-8">
                   <div className="bg-zinc-900/50 p-6 rounded-3xl border border-zinc-800/50 backdrop-blur-xl">

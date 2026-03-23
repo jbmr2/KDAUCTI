@@ -272,7 +272,12 @@ export const AuctionTicker = () => {
           />
 
           <div className="flex w-full items-center px-[4vw] gap-[4vw] relative z-10">
-            <div className="bg-emerald-600 px-[3vw] py-[2vh] skew-x-[-15deg] -ml-[6vw] pr-[5vw] flex items-center justify-center">
+            {soldPlayer.image && (
+              <div className="w-[12vh] h-[12vh] bg-zinc-900 rounded-2xl border-2 border-emerald-500/50 overflow-hidden flex-shrink-0 shadow-2xl">
+                <img src={soldPlayer.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              </div>
+            )}
+            <div className="bg-emerald-600 px-[3vw] py-[2vh] skew-x-[-15deg] -ml-[2vw] pr-[5vw] flex items-center justify-center">
               <span className="text-[6vh] font-black italic uppercase text-white skew-x-[15deg]">SOLD</span>
             </div>
             
@@ -336,7 +341,12 @@ export const AuctionTicker = () => {
           />
 
           <div className="flex items-center gap-[4vw] w-full px-[4vw]">
-            <div className="bg-red-600 px-[3vw] py-[2vh] skew-x-[-15deg] -ml-[6vw] pr-[5vw] flex items-center justify-center">
+            {soldPlayer.image && (
+              <div className="w-[12vh] h-[12vh] bg-zinc-900 rounded-2xl border-2 border-red-500/50 overflow-hidden flex-shrink-0 shadow-2xl">
+                <img src={soldPlayer.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              </div>
+            )}
+            <div className="bg-red-600 px-[3vw] py-[2vh] skew-x-[-15deg] -ml-[2vw] pr-[5vw] flex items-center justify-center">
               <span className="text-[6vh] font-black italic uppercase text-white skew-x-[15deg]">UNSOLD</span>
             </div>
             
@@ -387,8 +397,13 @@ export const AuctionTicker = () => {
             </div>
           </div>
 
-          {/* 3. Player Info Section */}
-          <div className="flex-1 min-w-0 px-8 flex flex-col justify-center z-10">
+          {/* 3. Player Image & Info Section */}
+          <div className="flex-1 min-w-0 px-8 flex items-center gap-6 z-10">
+            {currentPlayer.image && (
+              <div className="w-20 h-20 bg-zinc-900 rounded-xl border border-white/10 overflow-hidden flex-shrink-0">
+                <img src={currentPlayer.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              </div>
+            )}
             <motion.div 
               key={currentPlayer.id}
               initial={{ opacity: 0, x: -20 }}

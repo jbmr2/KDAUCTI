@@ -1,10 +1,11 @@
 export type PlayerCategory = 'A' | 'B' | 'C' | 'None';
 export type PlayerPosition = 'Raider' | 'Defender' | 'All-rounder';
-export type PlayerStatus = 'unsold' | 'sold' | 'current';
+export type PlayerStatus = 'available' | 'unsold' | 'sold' | 'current';
 
 export interface Player {
   id: string;
   name: string;
+  image?: string;
   category: PlayerCategory;
   position: PlayerPosition;
   basePrice: number;
