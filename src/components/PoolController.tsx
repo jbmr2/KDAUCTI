@@ -613,6 +613,12 @@ export const PoolController = () => {
                   >
                     <Key className="w-3 h-3" /> COPY POOL LINK
                   </button>
+                  <button 
+                    onClick={() => copyToClipboard(`${window.location.origin}${window.location.pathname}?view=ticker&pool=${activePool?.id}`, "Ticker link copied!")}
+                    className="flex items-center gap-1.5 px-2 py-1 bg-orange-600/10 hover:bg-orange-600/20 text-orange-500 rounded text-[10px] font-black transition-all border border-orange-500/20"
+                  >
+                    <TrendingUp className="w-3 h-3" /> COPY TICKER LINK
+                  </button>
                 </div>
               </div>
           </div>
