@@ -118,7 +118,7 @@ export const LEDDisplay = () => {
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="text-red-500 text-[1vh] font-black uppercase tracking-widest mb-1">{p.position}</div>
-                    <div className="text-[2.5vh] font-black text-white uppercase tracking-tighter truncate leading-none mb-2">{p.name}</div>
+                    <div className="text-[2.5vh] font-black text-white uppercase tracking-tighter leading-none mb-2">{p.name}</div>
                     <div className="flex items-center justify-between">
                       <span className="text-zinc-500 text-[1vh] font-black uppercase tracking-widest">Base Price</span>
                       <span className="text-[1.8vh] font-black text-zinc-300">{p.basePrice.toLocaleString()}</span>
@@ -193,7 +193,7 @@ export const LEDDisplay = () => {
                     </div>
                   </div>
                   <div className="col-span-4">
-                    <h2 className="text-[3.8vh] font-black text-white uppercase italic leading-none truncate">{team.name}</h2>
+                    <h2 className="text-[3.8vh] font-black text-white uppercase italic leading-none">{team.name}</h2>
                   </div>
                   <div className="col-span-2 text-center">
                     <div className="text-[2.8vh] font-black text-zinc-400 italic">
@@ -278,7 +278,7 @@ export const LEDDisplay = () => {
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[2.2vh] font-black text-white uppercase truncate leading-tight italic">{player.name}</p>
+                <p className="text-[2.2vh] font-black text-white uppercase leading-tight italic">{player.name}</p>
                 <div className="flex justify-between items-center mt-1">
                   <span className="text-[1.2vh] font-black text-zinc-500 uppercase tracking-widest">{player.category} • {player.position}</span>
                   <span className="text-[1.8vh] font-black text-emerald-500 italic">{(player.currentBid || 0).toLocaleString()}</span>
@@ -409,9 +409,9 @@ export const LEDDisplay = () => {
                       <Users className="w-full h-full text-emerald-500 p-4" />
                     )}
                   </div>
-                  <div className="text-left min-w-0">
+                  <div className="text-left min-w-0 flex-1">
                     <p className="text-emerald-500 text-[2.5vh] font-black uppercase tracking-widest mb-1 opacity-60">Purchased By</p>
-                    <h2 className="text-[7vh] font-black text-white uppercase italic leading-none truncate">
+                    <h2 className="text-[7vh] font-black text-white uppercase italic leading-none whitespace-normal tracking-tighter">
                       {purchaser.name}
                     </h2>
                   </div>
@@ -484,7 +484,7 @@ export const LEDDisplay = () => {
                       </span>
                     </div>
                     
-                    <h1 className="text-[11vh] font-black italic tracking-tighter uppercase leading-[0.8] text-white drop-shadow-2xl truncate">
+                    <h1 className="text-[11vh] font-black italic tracking-tighter uppercase leading-[0.8] text-white drop-shadow-2xl whitespace-normal">
                       {currentPlayer.name}
                     </h1>
                   </div>
@@ -538,9 +538,9 @@ export const LEDDisplay = () => {
                         <Users className="w-full h-full text-emerald-500 p-[1.2vh]" />
                       )}
                     </div>
-                    <div className="text-left min-w-0">
+                    <div className="text-left min-w-0 flex-1">
                       <p className="text-emerald-500 text-[1.5vh] font-black uppercase tracking-[0.5em] mb-[0.2vh] opacity-60">LEADING BIDDER</p>
-                      <h2 className="text-[4.5vh] font-black text-white uppercase italic leading-none truncate tracking-tighter">
+                      <h2 className="text-[4.5vh] font-black text-white uppercase italic leading-none tracking-tighter whitespace-normal">
                         {currentBidder.name}
                       </h2>
                     </div>
