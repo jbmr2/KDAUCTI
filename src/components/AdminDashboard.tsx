@@ -20,7 +20,6 @@ export const AdminDashboard = () => {
     position: 'Raider',
     basePrice: '' as any,
     tournamentId: '',
-    stats: { matches: 0, raidPoints: 0, tacklePoints: 0 }
   });
 
   const [newTeam, setNewTeam] = useState({
@@ -39,6 +38,11 @@ export const AdminDashboard = () => {
 
   const [filterTournament, setFilterTournament] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+
+  const formatPoints = (amount: number) => {
+    return `${amount.toLocaleString()} Points`;
+  };
 
   useEffect(() => {
     const unsubTournaments = onValue(ref(rtdb, 'tournaments'), (snapshot) => {
@@ -94,7 +98,7 @@ export const AdminDashboard = () => {
         status: 'available',
         teamId: null
       });
-      setNewPlayer({ name: '', image: '', category: 'None' as any, position: 'Raider', basePrice: '' as any, tournamentId: '', stats: { matches: 0, raidPoints: 0, tacklePoints: 0 } });
+      setNewPlayer({ name: '', image: '', category: 'None' as any, position: 'Raider', basePrice: '' as any, tournamentId: '' });
     } catch (err) {
       handleDatabaseError(err, OperationType.CREATE, `tournaments/${newPlayer.tournamentId}/players`);
     }
@@ -153,8 +157,7 @@ export const AdminDashboard = () => {
           currentBid: 0,
           currentBidderId: null,
           status: 'available',
-          teamId: null,
-          stats: { matches: 0, raidPoints: 0, tacklePoints: 0 }
+          teamId: null
         });
       }
 
@@ -464,10 +467,10 @@ export const AdminDashboard = () => {
                 className="w-full p-4 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none transition-all"
               />
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-500 uppercase px-1">Team Purse Value (Default)</label>
+                <label className="text-[10px] font-black text-zinc-500 uppercase px-1">Team Purse Value (Points)</label>
                 <input 
                   type="number" 
-                  placeholder="Initial Purse (e.g. 50000000)" 
+                  placeholder="Initial Purse (e.g. 50000)" 
                   value={isNaN(newTournament.initialPurse) ? '' : newTournament.initialPurse}
                   onChange={e => setNewTournament({...newTournament, initialPurse: e.target.value === '' ? '' : parseInt(e.target.value)})}
                   className="w-full p-4 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-emerald-500 outline-none transition-all"
@@ -516,7 +519,7 @@ export const AdminDashboard = () => {
               </select>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase px-1">Team Purse Value (₹)</label>
+                  <label className="text-[10px] font-black text-zinc-500 uppercase px-1">Team Purse Value (Points)</label>
                   <input 
                     type="number" 
                     placeholder="Budget" 
@@ -753,6 +756,17 @@ export const AdminDashboard = () => {
                 <option value="B">Category B</option>
                 <option value="C">Category C</option>
               </select>
+              <select 
+                value={filterStatus}
+                onChange={e => setFilterStatus(e.target.value)}
+                className="p-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs outline-none focus:border-emerald-500 transition-all"
+              >
+                <option value="">All Statuses</option>
+                <option value="available">Available</option>
+                <option value="sold">Sold</option>
+                <option value="unsold">Unsold</option>
+                <option value="current">Current</option>
+              </select>
             </div>
           </div>
           <div className="overflow-x-auto">
@@ -773,6 +787,7 @@ export const AdminDashboard = () => {
                 {players
                   .filter(p => !filterTournament || p.tournamentId === filterTournament)
                   .filter(p => !filterCategory || p.category === filterCategory)
+                  .filter(p => !filterStatus || p.status === filterStatus)
                   .map(player => (
                   <tr key={player.id} className="group hover:bg-zinc-950/50 transition-all">
                     <td className="py-4 font-bold">{player.name}</td>
@@ -807,7 +822,7 @@ export const AdminDashboard = () => {
                       <span className="px-2 py-1 bg-zinc-800 rounded text-xs">{player.category}</span>
                     </td>
                     <td className="py-4 text-zinc-400">{player.position}</td>
-                    <td className="py-4 font-mono">₹{player.basePrice.toLocaleString()}</td>
+                    <td className="py-4 font-mono">{formatPoints(player.basePrice)}</td>
                     <td className="py-4">
                       <span className={`px-2 py-1 rounded text-xs uppercase font-bold ${
                         player.status === 'sold' ? 'bg-emerald-500/10 text-emerald-500' :

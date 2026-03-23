@@ -15,11 +15,6 @@ export interface Player {
   teamId: string | null;
   tournamentId?: string;
   updatedAt?: number;
-  stats: {
-    matches: number;
-    raidPoints: number;
-    tacklePoints: number;
-  };
 }
 
 export interface Team {
@@ -45,6 +40,8 @@ export interface AuctionState {
   tournamentId: string | null;
   status: 'idle' | 'active' | 'finished';
   timer: number;
+  viewMode?: 'auction' | 'teams' | 'team-squad' | 'unsold';
+  selectedTeamId?: string | null;
 }
 
 export interface Tournament {

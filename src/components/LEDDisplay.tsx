@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Gavel, Users, User, Trophy, Shield, Zap } from 'lucide-react';
+import { Gavel, Users, User, Trophy, Zap, XCircle } from 'lucide-react';
 import { rtdb } from '../firebase';
 import { ref, onValue } from 'firebase/database';
 import { Player, Team, Bid, AuctionState, Tournament } from '../types';
@@ -81,6 +81,223 @@ export const LEDDisplay = () => {
   const currentPlayer = players.find(p => p.id === auctionState?.currentPlayerId);
   const currentBidder = teams.find(t => t.id === currentPlayer?.currentBidderId);
 
+  const UnsoldListView = () => {
+    const unsoldPlayers = players.filter(p => p.status === 'unsold');
+
+    return (
+      <div className="h-screen w-screen bg-black p-[3vw] flex flex-col gap-[2vh] overflow-hidden">
+        <div className="flex justify-between items-center mb-[2vh]">
+          <h1 className="text-[6vh] font-black italic uppercase text-red-500 tracking-tighter flex items-center gap-4">
+            <XCircle className="w-[6vh] h-[6vh]" /> UNSOLD PLAYERS
+          </h1>
+          <div className="bg-red-500/10 px-6 py-2 border border-red-500/30 rounded-xl">
+            <p className="text-red-500 text-[1.2vh] font-black uppercase tracking-widest mb-1">Total Unsold</p>
+            <p className="text-[3.5vh] font-black text-white">{unsoldPlayers.length} Players</p>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-hidden">
+          <div className="grid grid-cols-4 gap-[2vh] h-full auto-rows-max overflow-y-auto pr-2 custom-scrollbar">
+            {unsoldPlayers.length > 0 ? (
+              unsoldPlayers.map((p, idx) => (
+                <motion.div 
+                  key={p.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className="bg-zinc-900/50 border-2 border-zinc-800 rounded-[2vh] p-[2vh] flex items-center gap-[2vh] group hover:border-red-500/50 transition-all duration-300"
+                >
+                  {p.image ? (
+                    <div className="w-[10vh] h-[10vh] rounded-[1.5vh] border-2 border-zinc-800 group-hover:border-red-500/30 overflow-hidden bg-zinc-950 flex-shrink-0">
+                      <img src={p.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    </div>
+                  ) : (
+                    <div className="w-[10vh] h-[10vh] rounded-[1.5vh] border-2 border-zinc-800 flex items-center justify-center bg-zinc-950 flex-shrink-0">
+                      <User className="w-[5vh] h-[5vh] text-zinc-800" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-red-500 text-[1vh] font-black uppercase tracking-widest mb-1">{p.position}</div>
+                    <div className="text-[2.5vh] font-black text-white uppercase tracking-tighter truncate leading-none mb-2">{p.name}</div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-500 text-[1vh] font-black uppercase tracking-widest">Base Price</span>
+                      <span className="text-[1.8vh] font-black text-zinc-300">{p.basePrice.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            ) : (
+              <div className="col-span-4 h-full flex flex-col items-center justify-center text-zinc-700 gap-4">
+                <Gavel className="w-20 h-20 opacity-20" />
+                <p className="text-2xl font-black uppercase italic tracking-widest">No Unsold Players Yet</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <style>{`
+          .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+          .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+          .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+          .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #52525b; }
+        `}</style>
+      </div>
+    );
+  };
+
+  const TeamListView = () => {
+    const tournament = tournaments.find(t => t.id === selectedPoolId);
+    const initialPurse = tournament?.initialPurse || 50000000;
+
+    return (
+      <div className="h-screen w-screen bg-black p-[3vw] flex flex-col gap-[1vh] overflow-hidden">
+        <div className="flex justify-between items-center mb-[2vh]">
+          <h1 className="text-[6vh] font-black italic uppercase text-emerald-500 tracking-tighter">TEAM STANDINGS</h1>
+          <div className="text-right">
+            <p className="text-zinc-500 text-[1.2vh] font-black uppercase tracking-widest mb-1">Initial Purse</p>
+            <p className="text-[3.5vh] font-black text-white">{initialPurse.toLocaleString()} Points</p>
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col min-h-0 border-t-4 border-emerald-500">
+          {/* List Header */}
+          <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-zinc-900/80 text-[1.5vh] font-black uppercase tracking-widest text-zinc-500 sticky top-0 z-10 border-b border-zinc-800">
+            <div className="col-span-1">Logo</div>
+            <div className="col-span-4">Team Name</div>
+            <div className="col-span-2 text-center">Players</div>
+            <div className="col-span-2 text-right">Spent</div>
+            <div className="col-span-3 text-right text-emerald-500">Remaining Purse</div>
+          </div>
+
+          {/* List Rows - Distributed to fit screen */}
+          <div className="flex-1 flex flex-col min-h-0">
+            {teams.sort((a,b) => b.budget - a.budget).map((team, index) => {
+              const squad = players.filter(p => p.teamId === team.id);
+              const spent = squad.reduce((sum, p) => sum + (p.currentBid || 0), 0);
+              
+              return (
+                <motion.div 
+                  key={team.id}
+                  initial={{ opacity: 0, x: -50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.03 }}
+                  className="flex-1 grid grid-cols-12 gap-4 items-center px-6 border-b border-zinc-800/50 bg-zinc-900/20 hover:bg-emerald-500/5 transition-colors min-h-0"
+                >
+                  <div className="col-span-1">
+                    <div className="w-[6vh] h-[6vh] bg-white rounded-lg p-1 flex-shrink-0 shadow-xl">
+                      {team.logo ? (
+                        <img src={team.logo} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                      ) : (
+                        <Trophy className="w-full h-full text-emerald-500" />
+                      )}
+                    </div>
+                  </div>
+                  <div className="col-span-4">
+                    <h2 className="text-[3.8vh] font-black text-white uppercase italic leading-none truncate">{team.name}</h2>
+                  </div>
+                  <div className="col-span-2 text-center">
+                    <div className="text-[2.8vh] font-black text-zinc-400 italic">
+                      {squad.length} <span className="text-[1.2vh] text-zinc-600 not-italic ml-1">PLAYERS</span>
+                    </div>
+                  </div>
+                  <div className="col-span-2 text-right">
+                    <div className="text-[3vh] font-black text-red-500 tabular-nums">{spent.toLocaleString()}</div>
+                  </div>
+                  <div className="col-span-3 text-right">
+                    <div className="text-[4.5vh] font-black text-emerald-500 tabular-nums leading-none drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                      {team.budget.toLocaleString()}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const TeamSquadView = () => {
+    const team = teams.find(t => t.id === auctionState?.selectedTeamId);
+    if (!team) return null;
+
+    const tournament = tournaments.find(t => t.id === selectedPoolId);
+    const initialPurse = tournament?.initialPurse || 50000000;
+    const squad = players.filter(p => p.teamId === team.id);
+    const maxPlayers = 12;
+    const remainingPlayers = maxPlayers - squad.length;
+
+    return (
+      <div className="h-screen w-screen bg-black p-[4vw] flex flex-col gap-[4vh] overflow-hidden bg-gradient-to-br from-emerald-950/20 to-black">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-[3vw]">
+            <div className="w-[15vh] h-[15vh] bg-white rounded-[2vh] p-2 shadow-2xl overflow-hidden flex-shrink-0 border-4 border-emerald-500">
+              {team.logo ? (
+                <img src={team.logo} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+              ) : (
+                <Trophy className="w-full h-full text-emerald-500 p-4" />
+              )}
+            </div>
+            <div>
+              <p className="text-emerald-500 text-[2vh] font-black uppercase tracking-[0.5em] mb-1 italic">Squad List</p>
+              <h1 className="text-[10vh] font-black text-white uppercase italic leading-none tracking-tighter drop-shadow-2xl">
+                {team.name}
+              </h1>
+            </div>
+          </div>
+
+          <div className="flex gap-[2vw]">
+            <div className="bg-zinc-900/80 px-[3vw] py-[2vh] rounded-[3vh] border-2 border-zinc-800 text-center">
+              <p className="text-zinc-500 text-[1.2vh] font-black uppercase tracking-widest mb-1">Players</p>
+              <p className="text-[4vh] font-black text-white leading-none italic">{squad.length} / {maxPlayers}</p>
+              <p className="text-[1.2vh] text-emerald-500 font-bold uppercase mt-1">Remaining: {remainingPlayers}</p>
+            </div>
+            <div className="bg-zinc-900/80 px-[3vw] py-[2vh] rounded-[3vh] border-2 border-zinc-800 text-center">
+              <p className="text-zinc-500 text-[1.2vh] font-black uppercase tracking-widest mb-1">Purse Left</p>
+              <p className="text-[4vh] font-black text-emerald-500 leading-none tabular-nums italic">{team.budget.toLocaleString()}</p>
+              <p className="text-[1.2vh] text-zinc-600 font-bold uppercase mt-1">Initial: {initialPurse.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2vw] overflow-y-auto pr-4 custom-scrollbar">
+          {squad.map((player, idx) => (
+            <motion.div
+              key={player.id}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: idx * 0.05 }}
+              className="bg-zinc-900/40 border-2 border-zinc-800/50 rounded-[2.5vh] p-[2vh] flex items-center gap-[1.5vw] relative overflow-hidden group hover:border-emerald-500/50 transition-all"
+            >
+              <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500" />
+              <div className="w-[8vh] h-[8vh] bg-zinc-950 rounded-full border-2 border-zinc-800 overflow-hidden flex-shrink-0">
+                {player.image ? (
+                  <img src={player.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <User className="w-full h-full text-zinc-700 p-3" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[2.2vh] font-black text-white uppercase truncate leading-tight italic">{player.name}</p>
+                <div className="flex justify-between items-center mt-1">
+                  <span className="text-[1.2vh] font-black text-zinc-500 uppercase tracking-widest">{player.category} • {player.position}</span>
+                  <span className="text-[1.8vh] font-black text-emerald-500 italic">{(player.currentBid || 0).toLocaleString()}</span>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+          
+          {/* Empty slots placeholders */}
+          {[...Array(remainingPlayers > 0 ? remainingPlayers : 0)].map((_, i) => (
+            <div key={`empty-${i}`} className="border-2 border-dashed border-zinc-900 rounded-[2.5vh] p-[2vh] flex items-center justify-center opacity-30">
+              <span className="text-[1.5vh] font-black text-zinc-800 uppercase tracking-widest">Available Slot {squad.length + i + 1}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   // New logic for showing last completed player (Sold/Unsold)
   const [lastCompletedPlayer, setLastCompletedPlayer] = useState<Player | null>(null);
 
@@ -107,6 +324,21 @@ export const LEDDisplay = () => {
         <div className="animate-pulse text-emerald-500 font-black text-4xl uppercase italic">Waiting for Pool...</div>
       </div>
     );
+  }
+
+  // TEAM LIST VIEW
+  if (auctionState?.viewMode === 'teams') {
+    return <TeamListView />;
+  }
+
+  // TEAM SQUAD VIEW
+  if (auctionState?.viewMode === 'team-squad') {
+    return <TeamSquadView />;
+  }
+
+  // UNSOLD LIST VIEW
+  if (auctionState?.viewMode === 'unsold') {
+    return <UnsoldListView />;
   }
 
   // Full Screen Sold/Unsold View
@@ -188,7 +420,7 @@ export const LEDDisplay = () => {
                 <div className="bg-emerald-500/10 px-[6vw] py-[2vh] rounded-[3vh] border-2 border-emerald-500/30 backdrop-blur-xl w-full">
                   <p className="text-zinc-500 text-[2vh] font-black uppercase tracking-[0.3em] mb-1">Final Bid Amount</p>
                   <div className="text-[12vh] font-black text-emerald-400 leading-none drop-shadow-[0_0_30px_rgba(16,185,129,0.4)]">
-                    ₹{lastCompletedPlayer.currentBid?.toLocaleString()}
+                    {lastCompletedPlayer.currentBid?.toLocaleString()} Points
                   </div>
                 </div>
               </div>
@@ -198,7 +430,7 @@ export const LEDDisplay = () => {
               <div className="bg-zinc-900/60 px-[8vw] py-[6vh] rounded-[4vh] border-4 border-red-500/20 backdrop-blur-3xl w-full">
                 <p className="text-red-500/40 text-[5vh] font-black uppercase tracking-[0.8em] italic">NO BIDS</p>
                 <div className="mt-4 text-zinc-500 text-2xl font-black uppercase tracking-widest">
-                  Base Price: ₹{lastCompletedPlayer.basePrice?.toLocaleString()}
+                  Base Price: {lastCompletedPlayer.basePrice?.toLocaleString()} Points
                 </div>
               </div>
             )}
@@ -258,20 +490,7 @@ export const LEDDisplay = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-6 pt-8">
-                  <div className="bg-zinc-900/50 p-6 rounded-3xl border border-zinc-800/50 backdrop-blur-xl">
-                    <p className="text-zinc-500 text-xl font-black uppercase mb-1">Matches</p>
-                    <p className="text-5xl font-black text-emerald-500">{currentPlayer.stats.matches}</p>
-                  </div>
-                  <div className="bg-zinc-900/50 p-6 rounded-3xl border border-zinc-800/50 backdrop-blur-xl">
-                    <p className="text-zinc-500 text-xl font-black uppercase mb-1">Raid Pts</p>
-                    <p className="text-5xl font-black text-emerald-500">{currentPlayer.stats.raidPoints}</p>
-                  </div>
-                  <div className="bg-zinc-900/50 p-6 rounded-3xl border border-zinc-800/50 backdrop-blur-xl">
-                    <p className="text-zinc-500 text-xl font-black uppercase mb-1">Tackle Pts</p>
-                    <p className="text-5xl font-black text-emerald-500">{currentPlayer.stats.tacklePoints}</p>
-                  </div>
-                </div>
+
               </motion.div>
             </div>
 
@@ -299,7 +518,7 @@ export const LEDDisplay = () => {
                   {currentPlayer.currentBidderId ? 'Current Bid' : 'Base Price'}
                 </p>
                 <div className="text-[8rem] font-black italic text-emerald-500 leading-none drop-shadow-[0_0_50px_rgba(16,185,129,0.5)]">
-                  ₹{(currentPlayer.currentBid || currentPlayer.basePrice).toLocaleString()}
+                  {(currentPlayer.currentBid || currentPlayer.basePrice).toLocaleString()} Points
                 </div>
               </motion.div>
 
@@ -349,7 +568,7 @@ export const LEDDisplay = () => {
                             className={`flex justify-between items-center p-4 rounded-2xl ${i === 0 ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-zinc-950/50'}`}
                           >
                             <span className="text-2xl font-black uppercase italic">{bidder?.name}</span>
-                            <span className={`text-3xl font-black ${i === 0 ? 'text-emerald-500' : 'text-zinc-500'}`}>₹{bid.amount.toLocaleString()}</span>
+                            <span className={`text-3xl font-black ${i === 0 ? 'text-emerald-500' : 'text-zinc-500'}`}>{bid.amount.toLocaleString()} Points</span>
                           </motion.div>
                         );
                       })}

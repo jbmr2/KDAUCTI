@@ -3,11 +3,11 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Key, LogIn, Users, Trophy, Gavel, Play, CheckCircle, 
   XCircle, TrendingUp, RefreshCw, ArrowLeft, ArrowRight, User as UserIcon, Trash2, Undo2,
-  Tv, Copy, FileUp, UserPlus
+  Tv, Copy, FileUp, UserPlus, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { rtdb } from '../firebase';
 import { ref, onValue, update, push, set, get, serverTimestamp } from 'firebase/database';
-import { Player, Team, Bid, AuctionState, OperationType, Tournament } from '../types';
+import { Player, Team, Bid, AuctionState, OperationType, Tournament, PlayerStatus } from '../types';
 import { handleDatabaseError } from '../services/errorService';
 
 export const PoolController = () => {
@@ -26,16 +26,33 @@ export const PoolController = () => {
   const [auctionState, setAuctionState] = useState<AuctionState | null>(null);
   const [bids, setBids] = useState<Bid[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [multiplierUnit, setMultiplierUnit] = useState(1000); // 1X = 1000
+  const [multiplierUnit, setMultiplierUnit] = useState(() => {
+    const saved = localStorage.getItem('multiplier_unit');
+    return saved ? parseInt(saved) : 1000;
+  }); 
   const [activeMultiplier, setActiveMultiplier] = useState(1); // Default 1X
+  const [showSquadButtons, setShowSquadButtons] = useState(false); // Collapsed by default
+
+  // Sync multiplier unit to localStorage
+  useEffect(() => {
+    localStorage.setItem('multiplier_unit', multiplierUnit.toString());
+  }, [multiplierUnit]);
   const [customBidAmount, setCustomBidAmount] = useState<string>('');
+  const [playerFilter, setPlayerFilter] = useState<PlayerStatus | 'all'>('all');
 
   // Computed values
-  const poolPlayers = players.filter(p => p.status === 'available' || p.status === 'unsold' || p.status === 'current');
+  const poolPlayers = players.filter(p => {
+    if (playerFilter === 'all') return p.status === 'available' || p.status === 'unsold' || p.status === 'current';
+    return p.status === playerFilter;
+  });
   const activePlayer = poolPlayers[currentIndex];
   const currentBids = bids.filter(b => b.playerId === activePlayer?.id).sort((a, b) => b.timestamp - a.timestamp).slice(0, 20);
 
   const bidIncrement = multiplierUnit * activeMultiplier;
+
+  const formatPoints = (amount: number) => {
+    return `${amount.toLocaleString()} Points`;
+  };
 
   const [newPlayer, setNewPlayer] = useState({
     name: '',
@@ -43,7 +60,6 @@ export const PoolController = () => {
     category: 'None' as any,
     position: 'Raider',
     basePrice: '' as any,
-    stats: { matches: 0, raidPoints: 0, tacklePoints: 0 }
   });
 
   const [newTeam, setNewTeam] = useState({
@@ -151,13 +167,6 @@ export const PoolController = () => {
     };
   }, [isAuthorized, activePool]);
 
-  // Sync Multiplier Unit to Base Price
-  useEffect(() => {
-    if (activePlayer?.basePrice) {
-      setMultiplierUnit(activePlayer.basePrice);
-    }
-  }, [activePlayer?.id, activePlayer?.basePrice]);
-
   // 3. Actions
   const addPlayer = async () => {
     if (!activePool) return;
@@ -172,7 +181,7 @@ export const PoolController = () => {
         status: 'available',
         teamId: null
       });
-      setNewPlayer({ name: '', image: '', category: 'None' as any, position: 'Raider', basePrice: '' as any, stats: { matches: 0, raidPoints: 0, tacklePoints: 0 } });
+      setNewPlayer({ name: '', image: '', category: 'None' as any, position: 'Raider', basePrice: '' as any });
     } catch (err) {
       handleDatabaseError(err, OperationType.CREATE, `tournaments/${activePool.id}/players`);
     }
@@ -241,8 +250,7 @@ export const PoolController = () => {
           currentBidderId: null,
           status: 'available',
           teamId: null,
-          updatedAt: now,
-          stats: { matches: 0, raidPoints: 0, tacklePoints: 0 }
+          updatedAt: now
         };
         importCount++;
       }
@@ -250,7 +258,7 @@ export const PoolController = () => {
       if (importCount > 0) {
         try {
           await update(ref(rtdb), updates);
-          alert(`✅ SUCCESS!\n\nImported ${importCount} players.\nBase Price set to: ₹500 (as per your file).`);
+          alert(`✅ SUCCESS!\n\nImported ${importCount} players.\nBase Price set to: 500 Points (as per your file).`);
         } catch (err) {
           handleDatabaseError(err, OperationType.UPDATE, 'bulk-import');
         }
@@ -368,6 +376,18 @@ export const PoolController = () => {
     }
   };
 
+  const toggleViewMode = async (mode: 'auction' | 'teams' | 'team-squad' | 'unsold', teamId: string | null = null) => {
+    if (!activePool) return;
+    try {
+      await update(ref(rtdb, `tournaments/${activePool.id}/auctionState`), {
+        viewMode: mode,
+        selectedTeamId: teamId
+      });
+    } catch (err) {
+      handleDatabaseError(err, OperationType.UPDATE, 'viewMode');
+    }
+  };
+
   const manualBid = async (teamId: string, player: Player) => {
     if (!activePool) return;
     const team = teams.find(t => t.id === teamId);
@@ -383,7 +403,7 @@ export const PoolController = () => {
 
     // 1. Check Purse Value (Budget)
     if (nextBid > team.budget) {
-      alert(`Insufficient budget! Team ${team.name} has only ₹${team.budget.toLocaleString()} left.`);
+      alert(`Insufficient budget! Team ${team.name} has only ${formatPoints(team.budget)} left.`);
       return;
     }
 
@@ -391,13 +411,13 @@ export const PoolController = () => {
     if (!player.currentBidderId) {
       // First bid must be at least base price
       if (nextBid < player.basePrice) {
-        alert(`First bid must be at least the Base Price (₹${player.basePrice.toLocaleString()})!`);
+        alert(`First bid must be at least the Base Price (${formatPoints(player.basePrice)})!`);
         return;
       }
     } else {
       // Next bid must be strictly higher than current bid
       if (nextBid <= player.currentBid) {
-        alert(`Next bid must be higher than current bid (₹${player.currentBid.toLocaleString()})!`);
+        alert(`Next bid must be higher than current bid (${formatPoints(player.currentBid)})!`);
         return;
       }
     }
@@ -434,6 +454,11 @@ export const PoolController = () => {
       updates[`tournaments/${activePool.id}/auctionState/status`] = 'idle';
       updates[`tournaments/${activePool.id}/auctionState/currentPlayerId`] = null;
       await update(ref(rtdb), updates);
+
+      // Advance to next player
+      if (currentIndex < poolPlayers.length - 1) {
+        setCurrentIndex(currentIndex + 1);
+      }
     } catch (err) {
       handleDatabaseError(err, OperationType.UPDATE, `tournaments/${activePool.id}/players`);
     }
@@ -450,6 +475,11 @@ export const PoolController = () => {
       updates[`tournaments/${activePool.id}/auctionState/status`] = 'idle';
       updates[`tournaments/${activePool.id}/auctionState/currentPlayerId`] = null;
       await update(ref(rtdb), updates);
+
+      // Advance to next player
+      if (currentIndex < poolPlayers.length - 1) {
+        setCurrentIndex(currentIndex + 1);
+      }
     } catch (err) {
       handleDatabaseError(err, OperationType.UPDATE, `tournaments/${activePool.id}/players`);
     }
@@ -599,10 +629,32 @@ export const PoolController = () => {
             <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-black italic uppercase flex items-center gap-2"><Gavel className="text-emerald-500" /> Auction Controller</h3>
-                <div className="flex items-center gap-2 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
-                  <button onClick={() => currentIndex > 0 && setCurrentIndex(currentIndex - 1)} className="p-2 hover:bg-zinc-900 rounded-md disabled:opacity-20" disabled={currentIndex === 0}><ArrowLeft className="w-4 h-4" /></button>
-                  <span className="text-xs font-bold px-2">{currentIndex + 1} / {poolPlayers.length}</span>
-                  <button onClick={() => currentIndex < poolPlayers.length - 1 && setCurrentIndex(currentIndex + 1)} className="p-2 hover:bg-zinc-900 rounded-md disabled:opacity-20" disabled={currentIndex === poolPlayers.length - 1}><ArrowRight className="w-4 h-4" /></button>
+                <div className="flex items-center gap-3">
+                  <div className="flex bg-zinc-950 p-1 rounded-lg border border-zinc-800">
+                    <button 
+                      onClick={() => toggleViewMode('auction')} 
+                      className={`px-3 py-1.5 rounded-md text-[10px] font-black transition-all ${auctionState?.viewMode !== 'teams' ? 'bg-emerald-600 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    >
+                      AUCTION
+                    </button>
+                    <button 
+                      onClick={() => toggleViewMode('teams')} 
+                      className={`px-3 py-1.5 rounded-md text-[10px] font-black transition-all ${auctionState?.viewMode === 'teams' ? 'bg-blue-600 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    >
+                      TEAMS
+                    </button>
+                    <button 
+                      onClick={() => toggleViewMode('unsold')} 
+                      className={`px-3 py-1.5 rounded-md text-[10px] font-black transition-all ${auctionState?.viewMode === 'unsold' ? 'bg-red-600 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    >
+                      UNSOLD
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
+                    <button onClick={() => currentIndex > 0 && setCurrentIndex(currentIndex - 1)} className="p-2 hover:bg-zinc-900 rounded-md disabled:opacity-20" disabled={currentIndex === 0}><ArrowLeft className="w-4 h-4" /></button>
+                    <span className="text-xs font-bold px-2">{currentIndex + 1} / {poolPlayers.length}</span>
+                    <button onClick={() => currentIndex < poolPlayers.length - 1 && setCurrentIndex(currentIndex + 1)} className="p-2 hover:bg-zinc-900 rounded-md disabled:opacity-20" disabled={currentIndex === poolPlayers.length - 1}><ArrowRight className="w-4 h-4" /></button>
+                  </div>
                 </div>
               </div>
 
@@ -627,8 +679,8 @@ export const PoolController = () => {
                     
                     <div className="grid grid-cols-2 gap-3 mb-6">
                       <button onClick={() => startAuction(activePlayer)} disabled={auctionState?.status === 'active'} className="py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-20 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all"><Play className="w-4 h-4" /> START</button>
-                      <button onClick={() => markSold(activePlayer)} disabled={!activePlayer.currentBidderId} className="py-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all border border-emerald-500/20"><CheckCircle className="w-4 h-4" /> SOLD</button>
-                      <button onClick={() => markUnsold(activePlayer)} className="py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all"><XCircle className="w-4 h-4" /> UNSOLD</button>
+                      <button onClick={() => markSold(activePlayer)} disabled={auctionState?.status !== 'active' || !activePlayer.currentBidderId} className="py-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all border border-emerald-500/20 disabled:opacity-20"><CheckCircle className="w-4 h-4" /> SOLD</button>
+                      <button onClick={() => markUnsold(activePlayer)} disabled={auctionState?.status !== 'active'} className="py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-20"><XCircle className="w-4 h-4" /> UNSOLD</button>
                       <button 
                         onClick={() => undoLastBid(activePlayer)} 
                         disabled={bids.filter(b => b.playerId === activePlayer.id).length === 0}
@@ -641,7 +693,7 @@ export const PoolController = () => {
                     <div className="p-4 bg-zinc-950 border border-zinc-800 rounded-2xl space-y-4">
                       <div className="flex justify-between items-center">
                         <div className="flex flex-col gap-1">
-                          <p className="text-[10px] text-zinc-500 font-bold uppercase">Multiplier Unit (₹)</p>
+                          <p className="text-[10px] text-zinc-500 font-bold uppercase">Multiplier Unit (Points)</p>
                           <input 
                             type="number" 
                             value={isNaN(multiplierUnit) ? '' : multiplierUnit}
@@ -649,7 +701,7 @@ export const PoolController = () => {
                             className="w-24 p-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-black text-emerald-500 outline-none focus:border-emerald-500"
                           />
                         </div>
-                        <p className="text-[10px] text-emerald-500 font-black italic">Current Increment: ₹{bidIncrement.toLocaleString()}</p>
+                        <p className="text-[10px] text-emerald-500 font-black italic">Current Increment: {formatPoints(bidIncrement)}</p>
                       </div>
                       
                       <div className="flex flex-col gap-3">
@@ -700,10 +752,10 @@ export const PoolController = () => {
                             <div className="flex justify-between items-start mb-1">
                               <p className="text-[10px] font-bold uppercase truncate max-w-[80px]">{t.name}</p>
                               <p className={`text-[8px] font-black px-1 rounded ${!activePlayer.currentBidderId ? 'bg-emerald-500 text-white' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                                {!activePlayer.currentBidderId ? 'BASE' : '+INC'} ₹{nextBid.toLocaleString()}
+                                {!activePlayer.currentBidderId ? 'BASE' : '+INC'} {nextBid.toLocaleString()} Points
                               </p>
                             </div>
-                            <p className="text-zinc-500 font-black text-[10px]">PURSE: ₹{(t.budget/10000000).toFixed(2)}Cr</p>
+                            <p className="text-zinc-500 font-black text-[10px]">PURSE: {formatPoints(t.budget)}</p>
                           </button>
                         );
                       })}
@@ -721,7 +773,7 @@ export const PoolController = () => {
                 {currentBids.map((bid, i) => (
                   <div key={bid.id} className={`flex justify-between p-3 rounded-xl border ${i === 0 ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-zinc-950 border-zinc-800'}`}>
                     <span className="font-bold text-xs uppercase">{teams.find(t => t.id === bid.teamId)?.name}</span>
-                    <span className="font-black text-emerald-500 text-xs">₹{bid.amount.toLocaleString()}</span>
+                    <span className="font-black text-emerald-500 text-xs">{formatPoints(bid.amount)}</span>
                   </div>
                 ))}
               </div>
@@ -764,10 +816,10 @@ export const PoolController = () => {
                 <input type="text" placeholder="Team Name" value={newTeam.name} onChange={e => setNewTeam({...newTeam, name: e.target.value})} className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs" />
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[8px] font-black text-zinc-500 uppercase px-1">Team Purse Value (₹)</label>
+                    <label className="text-[8px] font-black text-zinc-500 uppercase px-1">Team Purse Value (Points)</label>
                     <input 
                       type="number" 
-                      placeholder="e.g. 50000000" 
+                      placeholder="e.g. 50000" 
                       value={newTeam.budget === '' ? '' : newTeam.budget} 
                       onChange={e => setNewTeam({...newTeam, budget: e.target.value === '' ? '' : parseInt(e.target.value)})} 
                       className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs" 
@@ -780,17 +832,88 @@ export const PoolController = () => {
                 </div>
                 <button onClick={addTeam} className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl text-xs">ADD TEAM</button>
               </div>
+
+              {/* Show Squad on LED Buttons */}
+              <div className="mt-8 pt-6 border-t border-zinc-800">
+                <button 
+                  onClick={() => setShowSquadButtons(!showSquadButtons)}
+                  className="w-full flex items-center justify-between text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4 hover:text-zinc-300 transition-colors"
+                >
+                  <span>Show Team Squad on LED</span>
+                  {showSquadButtons ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                </button>
+                
+                <AnimatePresence>
+                  {showSquadButtons && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="grid grid-cols-2 gap-2 pb-2">
+                        {teams.map(t => (
+                          <button
+                            key={t.id}
+                            onClick={() => toggleViewMode('team-squad', t.id)}
+                            className={`p-2 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-2 ${auctionState?.viewMode === 'team-squad' && auctionState?.selectedTeamId === t.id ? 'bg-emerald-600 text-white' : 'bg-zinc-950 text-zinc-500 hover:text-zinc-300 border border-zinc-800'}`}
+                          >
+                            {t.logo && <img src={t.logo} className="w-4 h-4 rounded-full object-cover" />}
+                            <span className="truncate">{t.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Player List */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
-          <h3 className="text-lg font-black italic uppercase mb-6">Pool Player List</h3>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <h3 className="text-lg font-black italic uppercase">Pool Player List</h3>
+            <div className="flex bg-zinc-950 p-1 rounded-xl border border-zinc-800 overflow-x-auto max-w-full">
+              {(['all', 'available', 'sold', 'unsold'] as const).map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setPlayerFilter(filter)}
+                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all whitespace-nowrap ${
+                    playerFilter === filter 
+                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' 
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  {filter} ({filter === 'all' ? players.length : players.filter(p => p.status === filter).length})
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {players.map(p => (
-              <div key={p.id} className="p-4 bg-zinc-950 border border-zinc-800 rounded-2xl flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden flex-shrink-0 relative group">
+            {players
+              .filter(p => playerFilter === 'all' || p.status === playerFilter)
+              .map(p => (
+                <div key={p.id} className="p-4 bg-zinc-950 border border-zinc-800 rounded-2xl flex items-center gap-4 relative">
+                  {p.status === 'unsold' && (
+                    <button 
+                      onClick={async () => {
+                        if(window.confirm(`Mark ${p.name} as available again?`)) {
+                          await update(ref(rtdb, `tournaments/${activePool?.id}/players/${p.id}`), {
+                            status: 'available',
+                            currentBid: 0,
+                            currentBidderId: null
+                          });
+                        }
+                      }}
+                      className="absolute -top-2 -right-2 p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg shadow-lg z-10 transition-all border border-blue-400/20"
+                      title="Re-auction Player"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                    </button>
+                  )}
+                  <div className="w-12 h-12 rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden flex-shrink-0 relative group">
                   {p.image ? (
                     <img src={p.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
@@ -809,8 +932,8 @@ export const PoolController = () => {
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-xs uppercase truncate">{p.name}</p>
-                  <p className="text-[8px] text-zinc-500 font-bold uppercase">{p.status} • ₹{p.basePrice.toLocaleString()}</p>
+                  <p className="font-bold text-xs uppercase">{p.name}</p>
+                  <p className="text-[8px] text-zinc-500 font-bold uppercase">{p.status} • {formatPoints(p.basePrice)}</p>
                 </div>
                 <button onClick={async () => window.confirm('Delete?') && set(ref(rtdb, `tournaments/${activePool?.id}/players/${p.id}`), null)} className="p-2 text-zinc-800 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
               </div>

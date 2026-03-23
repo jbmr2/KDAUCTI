@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Gavel, Clock, TrendingUp, Users, Shield, Zap, User } from 'lucide-react';
+import { Gavel, Clock, TrendingUp, Users, User } from 'lucide-react';
 import { rtdb, auth } from '../firebase';
 import { ref, onValue, update, push, query, orderByChild, limitToLast, serverTimestamp, get } from 'firebase/database';
 import { Player, Team, Bid, AuctionState, OperationType } from '../types';
@@ -16,6 +16,10 @@ export const AuctionRoom = () => {
   const [userTeam, setUserTeam] = useState<Team | null>(null);
   const [showBidConfirm, setShowBidConfirm] = useState(false);
   const [tournamentId, setTournamentId] = useState<string | null>(null);
+
+  const formatPoints = (amount: number) => {
+    return `${amount.toLocaleString()} Points`;
+  };
 
   // 1. Get user's tournament assignment
   useEffect(() => {
@@ -127,7 +131,7 @@ export const AuctionRoom = () => {
 
     // 1. Check Purse Value (Budget)
     if (bidAmount > userTeam.budget) {
-      alert(`Insufficient budget! You have ₹${userTeam.budget.toLocaleString()} left.`);
+      alert(`Insufficient budget! You have ${formatPoints(userTeam.budget)} left.`);
       setShowBidConfirm(false);
       return;
     }
@@ -207,26 +211,18 @@ export const AuctionRoom = () => {
                 <div>
                   <h2 className="text-4xl font-black italic tracking-tighter uppercase mb-2">{currentPlayer?.name || "Loading..."}</h2>
                   <div className="flex gap-6 text-zinc-400">
-                    <div className="flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-emerald-500" />
-                      <span>{currentPlayer?.stats.raidPoints} Raid Pts</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Shield className="w-4 h-4 text-emerald-500" />
-                      <span>{currentPlayer?.stats.tacklePoints} Tackle Pts</span>
-                    </div>
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="text-sm text-zinc-500 uppercase font-bold mb-1">Current Bid</div>
-                  <div className="text-4xl font-black text-emerald-500">₹{(currentPlayer?.currentBid || currentPlayer?.basePrice || 0).toLocaleString()}</div>
+                  <div className="text-4xl font-black text-emerald-500">{formatPoints(currentPlayer?.currentBid || currentPlayer?.basePrice || 0)}</div>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-6 bg-zinc-950 border border-zinc-800 rounded-2xl">
                   <div className="text-sm text-zinc-500 uppercase font-bold mb-2">Base Price</div>
-                  <div className="text-2xl font-bold">₹{currentPlayer?.basePrice.toLocaleString()}</div>
+                  <div className="text-2xl font-bold">{formatPoints(currentPlayer?.basePrice || 0)}</div>
                 </div>
                 <div className="p-6 bg-zinc-950 border border-zinc-800 rounded-2xl">
                   <div className="text-sm text-zinc-500 uppercase font-bold mb-2">Current Bidder</div>
@@ -251,11 +247,11 @@ export const AuctionRoom = () => {
                     className="w-full py-6 bg-emerald-600 hover:bg-emerald-500 text-white text-2xl font-black italic rounded-2xl transition-all shadow-xl shadow-emerald-600/20 flex items-center justify-center gap-4"
                   >
                     <Gavel className="w-8 h-8" />
-                    PLACE BID (₹1,00,000+)
+                    PLACE BID (+1,00,000 Points)
                   </button>
                   <div className="w-full sm:w-auto p-4 bg-zinc-950 border border-zinc-800 rounded-2xl text-center">
                     <div className="text-xs text-zinc-500 uppercase font-bold mb-1">Your Budget</div>
-                    <div className="text-xl font-bold text-emerald-500">₹{userTeam.budget.toLocaleString()}</div>
+                    <div className="text-xl font-bold text-emerald-500">{formatPoints(userTeam.budget)}</div>
                   </div>
                 </div>
               )}
@@ -291,7 +287,7 @@ export const AuctionRoom = () => {
                         );
                       })()}
                     </div>
-                    <span className={`font-black ${i === 0 ? 'text-emerald-500 text-xl' : 'text-zinc-400'}`}>₹{bid.amount.toLocaleString()}</span>
+                    <span className={`font-black ${i === 0 ? 'text-emerald-500 text-xl' : 'text-zinc-400'}`}>{formatPoints(bid.amount)}</span>
                   </motion.div>
                 ))}
               </AnimatePresence>
@@ -317,7 +313,7 @@ export const AuctionRoom = () => {
                       {team.logo && <img src={team.logo} alt={team.name} className="w-6 h-6 rounded-full object-cover" referrerPolicy="no-referrer" />}
                       <span className="font-bold">{team.name}</span>
                     </div>
-                    <span className="text-emerald-500 font-bold">₹{(team.budget / 10000000).toFixed(2)} Cr</span>
+                    <span className="text-emerald-500 font-bold">{formatPoints(team.budget)}</span>
                   </div>
                   <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
                     <div 
@@ -363,7 +359,7 @@ export const AuctionRoom = () => {
                 <div>
                   <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-2">Confirm Your Bid</h3>
                   <p className="text-zinc-400">
-                    You are about to place a bid of <span className="text-emerald-500 font-bold">₹{((currentPlayer?.currentBid || currentPlayer?.basePrice || 0) + 100000).toLocaleString()}</span> for <span className="text-white font-bold">{currentPlayer?.name}</span>.
+                    You are about to place a bid of <span className="text-emerald-500 font-bold">{((currentPlayer?.currentBid || currentPlayer?.basePrice || 0) + 100000).toLocaleString()} Points</span> for <span className="text-white font-bold">{currentPlayer?.name}</span>.
                   </p>
                 </div>
 

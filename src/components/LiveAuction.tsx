@@ -14,11 +14,23 @@ export const LiveAuction = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [auctionState, setAuctionState] = useState<AuctionState | null>(null);
   const [bids, setBids] = useState<Bid[]>([]);
-  const [multiplierUnit, setMultiplierUnit] = useState(1000); // 1X = 1000
+  const [multiplierUnit, setMultiplierUnit] = useState(() => {
+    const saved = localStorage.getItem('multiplier_unit');
+    return saved ? parseInt(saved) : 1000;
+  });
   const [activeMultiplier, setActiveMultiplier] = useState(1); // Default 1X
+
+  // Sync multiplier unit to localStorage
+  useEffect(() => {
+    localStorage.setItem('multiplier_unit', multiplierUnit.toString());
+  }, [multiplierUnit]);
   const [customBidAmount, setCustomBidAmount] = useState<string>('');
 
   const bidIncrement = multiplierUnit * activeMultiplier;
+
+  const formatPoints = (amount: number) => {
+    return `${amount.toLocaleString()} Points`;
+  };
 
   // 1. Fetch Basic Data
   useEffect(() => {
@@ -96,13 +108,6 @@ export const LiveAuction = () => {
     .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
     .slice(0, 20);
 
-  // Sync Multiplier Unit to Base Price
-  useEffect(() => {
-    if (currentPlayer?.basePrice) {
-      setMultiplierUnit(currentPlayer.basePrice);
-    }
-  }, [currentPlayer?.id, currentPlayer?.basePrice]);
-
   // 3. Methods
   const startAuction = async () => {
     if (!currentPlayer || !selectedPoolId) return;
@@ -144,19 +149,19 @@ export const LiveAuction = () => {
 
     // 1. Check Purse Value (Budget)
     if (nextBid > team.budget) {
-      alert(`Insufficient budget! Team ${team.name} has only ₹${team.budget.toLocaleString()} left.`);
+      alert(`Insufficient budget! Team ${team.name} has only ${formatPoints(team.budget)} left.`);
       return;
     }
 
     // 2. Check Next Bid Value
     if (!currentPlayer.currentBidderId) {
       if (nextBid < currentPlayer.basePrice) {
-        alert(`First bid must be at least the Base Price (₹${currentPlayer.basePrice.toLocaleString()})!`);
+        alert(`First bid must be at least the Base Price (${formatPoints(currentPlayer.basePrice)})!`);
         return;
       }
     } else {
       if (nextBid <= currentPlayer.currentBid) {
-        alert(`Next bid must be higher than current bid (₹${currentPlayer.currentBid.toLocaleString()})!`);
+        alert(`Next bid must be higher than current bid (${formatPoints(currentPlayer.currentBid)})!`);
         return;
       }
     }
@@ -233,6 +238,11 @@ export const LiveAuction = () => {
       updates[`tournaments/${selectedPoolId}/auctionState/currentPlayerId`] = null;
       
       await update(ref(rtdb), updates);
+
+      // Advance to next player
+      if (currentIndex < poolPlayers.length - 1) {
+        setCurrentIndex(currentIndex + 1);
+      }
     } catch (err) {
       handleDatabaseError(err, OperationType.UPDATE, `tournaments/${selectedPoolId}/players`);
     }
@@ -251,6 +261,11 @@ export const LiveAuction = () => {
       updates[`tournaments/${selectedPoolId}/auctionState/currentPlayerId`] = null;
       
       await update(ref(rtdb), updates);
+
+      // Advance to next player
+      if (currentIndex < poolPlayers.length - 1) {
+        setCurrentIndex(currentIndex + 1);
+      }
     } catch (err) {
       handleDatabaseError(err, OperationType.UPDATE, `tournaments/${selectedPoolId}/players`);
     }
@@ -368,16 +383,16 @@ export const LiveAuction = () => {
                     </button>
                     <button 
                       onClick={markSold}
-                      disabled={!currentPlayer.currentBidderId || currentPlayer.status === 'sold'}
-                      className="p-6 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-2xl border border-emerald-500/20 transition-all flex flex-col items-center gap-3"
+                      disabled={auctionState?.status !== 'active' || !currentPlayer.currentBidderId || currentPlayer.status === 'sold'}
+                      className="p-6 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-2xl border border-emerald-500/20 transition-all flex flex-col items-center gap-3 disabled:opacity-20"
                     >
                       <CheckCircle className="w-8 h-8" />
                       <span className="font-black italic uppercase text-xs">Sold</span>
                     </button>
                     <button 
                       onClick={markUnsold}
-                      disabled={currentPlayer.status === 'sold'}
-                      className="p-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-2xl transition-all flex flex-col items-center gap-3"
+                      disabled={auctionState?.status !== 'active' || currentPlayer.status === 'sold'}
+                      className="p-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-2xl transition-all flex flex-col items-center gap-3 disabled:opacity-20"
                     >
                       <XCircle className="w-8 h-8" />
                       <span className="font-black italic uppercase text-xs">Unsold</span>
@@ -396,7 +411,7 @@ export const LiveAuction = () => {
                   <div className="p-6 bg-zinc-950 border border-zinc-800 rounded-3xl space-y-6">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                       <div className="flex flex-col gap-2 w-full md:w-auto">
-                        <label className="text-[10px] font-black text-zinc-500 uppercase">Multiplier Unit (₹):</label>
+                        <label className="text-[10px] font-black text-zinc-500 uppercase">Multiplier Unit (Points):</label>
                         <input 
                           type="number" 
                           value={isNaN(multiplierUnit) ? '' : multiplierUnit}
@@ -435,7 +450,7 @@ export const LiveAuction = () => {
 
                       <div className="text-right">
                         <div className="text-[10px] text-zinc-500 font-black uppercase mb-1">Current Increment</div>
-                        <div className="text-2xl font-black text-emerald-500">₹{bidIncrement.toLocaleString()}</div>
+                        <div className="text-2xl font-black text-emerald-500">{formatPoints(bidIncrement)}</div>
                       </div>
                     </div>
                   </div>
@@ -470,8 +485,8 @@ export const LiveAuction = () => {
                               {!currentPlayer.currentBidderId ? 'BASE' : '+INC'}
                             </span>
                           </div>
-                          <div className="text-white font-black text-xs mb-1">₹{nextBid.toLocaleString()}</div>
-                          <div className="text-zinc-500 font-black text-[10px]">PURSE: ₹{(team.budget / 10000000).toFixed(2)} Cr</div>
+                          <div className="text-white font-black text-xs mb-1">{nextBid.toLocaleString()} Points</div>
+                          <div className="text-zinc-500 font-black text-[10px]">PURSE: {formatPoints(team.budget)}</div>
                         </button>
                       );
                     })}
@@ -503,7 +518,7 @@ export const LiveAuction = () => {
                               {team?.logo && <img src={team.logo} className="w-6 h-6 rounded-full" />}
                               <span className="font-bold text-sm uppercase">{team?.name}</span>
                             </div>
-                            <span className={`font-black ${i === 0 ? 'text-emerald-500' : 'text-zinc-500'}`}>₹{bid.amount.toLocaleString()}</span>
+                            <span className={`font-black ${i === 0 ? 'text-emerald-500' : 'text-zinc-500'}`}>{formatPoints(bid.amount)}</span>
                           </div>
                         </motion.div>
                       );

@@ -56,6 +56,10 @@ export const TeamDashboard = () => {
 
   const getTeamSquad = (teamId: string) => players.filter(p => p.teamId === teamId);
 
+  const formatPoints = (amount: number) => {
+    return `${amount.toLocaleString()} Points`;
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 pt-24 pb-32 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-12">
@@ -123,7 +127,7 @@ export const TeamDashboard = () => {
                                   </div>
                                   <div className="text-[10px] text-emerald-500 font-bold uppercase flex items-center gap-1">
                                     <Wallet className="w-3 h-3" />
-                                    ₹{(team.budget / 10000000).toFixed(2)} Cr
+                                    {formatPoints(team.budget)}
                                   </div>
                                 </div>
                               </div>
